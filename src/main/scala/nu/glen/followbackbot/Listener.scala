@@ -12,7 +12,8 @@ class Listener(
 {
   def isMe(sn: String) = sn.toLowerCase == screenName.toLowerCase
 
-  def isMyOwnRetweet(status: Status) = status.getText.startsWith("RT @" + screenName)
+  def isMyOwnRetweet(status: Status) =
+    status.getText.toLowerCase.startsWith("rt @" + screenName.toLowerCase)
 
   override def onStatus(status: Status) {
     val statusScreenName = status.getUser.getScreenName
