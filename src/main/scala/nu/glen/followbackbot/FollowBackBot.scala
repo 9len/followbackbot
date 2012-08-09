@@ -22,7 +22,7 @@ class FollowBackBot(
   Logger.reset()
   log.info("STARTING UP")
 
-  val credentialFilename = "config/credentials.yml"
+  val credentialFilename = "credentials.yml"
 
   val credentials = {
     val credentialYaml = io.Source.fromFile(credentialFilename).mkString
