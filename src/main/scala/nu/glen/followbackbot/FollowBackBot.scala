@@ -52,7 +52,7 @@ class FollowBackBot(
   stream.addListener(listener)
   stream.user()
 
-  timer.schedule(10.seconds.fromNow, 2.minutes) {
+  timer.schedule(5.seconds.fromNow, 10.minutes) {
     fixer()
   }
 }
