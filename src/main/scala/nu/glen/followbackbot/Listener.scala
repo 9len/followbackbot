@@ -12,28 +12,35 @@ class Listener(
 {
   def isMe(sn: String) = sn.toLowerCase == screenName.toLowerCase
 
+  def isMyOwnRetweet(status: Status) = status.getText.startsWith("RT @" + screenName)
+
   override def onStatus(status: Status) {
     val statusScreenName = status.getUser.getScreenName
     log.info("Got Status: @%s: %s", statusScreenName, status.getText)
 
     if (isMe(statusScreenName)) {
       log.info(" Ignoring my own status")
+    } else if (isMyOwnRetweet(status)) {
+      log.info(" Ignoring a retweet of my own status")
     } else {
-      responder(status) foreach { statusUpdate =>
-        tryAndLogResult(" Replying with %s", statusUpdate.getStatus) {
-          val statusScreenName = status.getUser.getScreenName
+      responder(status) match {
+        case Some(statusUpdate) =>
+          tryAndLogResult(" Replying with %s", statusUpdate.getStatus) {
+            val statusScreenName = status.getUser.getScreenName
 
-          log.info(" Making sure @%s still follows me", statusScreenName)
-          if (twitter.existsFriendship(statusScreenName, screenName)) {
-            // only send the reply if the tweeter still follows us
-            log.info(" Tweeting: %s", statusUpdate.getStatus)
-            twitter.updateStatus(statusUpdate)
-          } else {
-            // otherwise, destroy the mutual follow
-            log.info(" No longer following me, unfollowing: %s", statusScreenName)
-            twitter.destroyFriendship(statusScreenName)
+            log.info(" Making sure @%s still follows me", statusScreenName)
+            if (twitter.existsFriendship(statusScreenName, screenName)) {
+              // only send the reply if the tweeter still follows us
+              log.info(" Tweeting: %s", statusUpdate.getStatus)
+              twitter.updateStatus(statusUpdate)
+            } else {
+              // otherwise, destroy the mutual follow
+              log.info(" No longer following me, unfollowing: %s", statusScreenName)
+              twitter.destroyFriendship(statusScreenName)
+            }
           }
-        }
+
+        case None => log.info(" Ignoring ineligible status")
       }
     }
   }
