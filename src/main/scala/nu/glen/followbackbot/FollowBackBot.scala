@@ -39,7 +39,7 @@ class FollowBackBot(
 
   val socialGraph = new SocialGraph(userId, twitter)
 
-  val listener = new Listener(credentials.screenName, responder, socialGraph, twitter)
+  val listener = new Listener(userId, credentials.screenName, responder, socialGraph, twitter)
 
   val stream = {
     val stream = new TwitterStreamFactory().getInstance()

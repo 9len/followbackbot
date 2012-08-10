@@ -3,6 +3,7 @@ package nu.glen.followbackbot
 import twitter4j._
 
 class Listener(
+    userId: Long,
     screenName: String,
     responder: Responder,
     socialGraph: SocialGraph,
@@ -10,10 +11,12 @@ class Listener(
   extends UserStreamListener
   with SimpleLogger
 {
-  def isMe(user: User) = user.getScreenName.toLowerCase == screenName.toLowerCase
+  def isMe(user: User) = user.getId == userId
 
-  def isMyOwnRetweet(status: Status) =
+  def isMyOwnRetweet(status: Status) = {
+    // simple check should catch both old- and new-school RTs
     status.getText.toLowerCase.startsWith("rt @" + screenName.toLowerCase)
+  }
 
   override def onStatus(status: Status) {
     log.info("Got Status: @%s: %s", status.getUser.getScreenName, status.getText)

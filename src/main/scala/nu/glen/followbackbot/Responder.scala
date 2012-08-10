@@ -12,9 +12,18 @@ object Responder {
   def simple(responder: SimpleResponder): Responder = {
     new Responder with SimpleLogger {
       override def apply(status: Status): Option[StatusUpdate] = {
-        responder(status.getText) map { text =>
-          val withReply = "@%s %s".format(status.getUser.getScreenName, text).trim
+        // get the untruncated retweet text if status is a retweet
+        val text =
+          if (status.isRetweet)
+            status.getRetweetedStatus.getText
+          else
+            status.getText
 
+        responder(text) map { response =>
+          // add @reply prefix
+          val withReply = "@%s %s".format(status.getUser.getScreenName, response).trim
+
+          // trim to 140 chars, append an elipsis if > 140
           val trimmed =
             if (withReply.size > 140)
               withReply.substring(0, 139).trim + "…"
