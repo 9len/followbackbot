@@ -3,6 +3,12 @@ package nu.glen.followbackbot
 import twitter4j.{Status, StatusUpdate}
 
 object Responder {
+  /**
+   * converts a SimpleResponder to a Responder, prefixing with the @reply,
+   * and truncating the response if necessary
+   *
+   * @param responder the SimpleResponder to convert
+   */
   def simple(responder: SimpleResponder): Responder = {
     new Responder with SimpleLogger {
       override def apply(status: Status): Option[StatusUpdate] = {

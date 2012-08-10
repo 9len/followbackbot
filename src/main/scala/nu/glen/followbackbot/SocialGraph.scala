@@ -4,7 +4,10 @@ import com.twitter.util.{Return, Try}
 import twitter4j._
 
 class SocialGraph(userId: Long, twitter: Twitter) extends SimpleLogger {
-  def reciprocate() {
+  /**
+   * Ensure that everyone following me is followed by me, unfollow anyone who no loner follows me
+   */
+  def reciprocate(): Unit = synchronized {
     val allFollowers = followers()
     val allFollowing = following()
 
@@ -21,13 +24,30 @@ class SocialGraph(userId: Long, twitter: Twitter) extends SimpleLogger {
     withUserIds(toUnfollow)(unfollow(_))
   }
 
+  /**
+   * Is the user following me?
+   *
+   * @param target the userId to inspect
+   */
   def following(target: Long): Boolean =
     twitter.showFriendship(userId, target).isSourceFollowingTarget
 
+  /**
+   * Do I follow the user?
+   *
+   * @param target the userId to inspect
+   */
   def followedBy(target: Long): Boolean =
     twitter.showFriendship(target, userId).isSourceFollowingTarget
 
-  def follow(target: Long, isProtected: Option[Boolean] = None) {
+  /**
+   * Follow a user. Will not follow if already following, or if the user is protected
+   * and a follow request has already been sent.
+   *
+   * @param the target the userId to follow
+   * @param isProtected if known, whether or not the user is protected
+   */
+  def follow(target: Long, isProtected: Option[Boolean] = None): Unit = synchronized {
     if (following(target)) {
       log.info(" Already following %s", target)
     } else {
@@ -49,11 +69,25 @@ class SocialGraph(userId: Long, twitter: Twitter) extends SimpleLogger {
     }
   }
 
-  def unfollow(userId: Long) {
-    twitter.destroyFriendship(userId)
+  /**
+   * unfollow a user
+   * @param target the userId to unfollow
+   */
+  def unfollow(target: Long): Unit = synchronized {
+    twitter.destroyFriendship(target)
   }
 
-  def ifFollowing(target: Long, msg: String, args: Any*)(f: => Any) {
+  /**
+   * Check to see if a user is still following me, and perform an action if so.
+   * If the user is no longer following me, unfollow the user.
+   *
+   * @param target the userId to inspect
+   * @param msg a message to log
+   * @param args args for that message
+   *
+   * @param f the action to perform
+   */
+  def ifFollowing(target: Long, msg: String, args: Any*)(f: => Any): Unit = synchronized {
     tryAndLogResult(msg, args: _*) {
       log.info(" Making sure user still follows me")
       if (followedBy(target)) {
@@ -66,10 +100,23 @@ class SocialGraph(userId: Long, twitter: Twitter) extends SimpleLogger {
     }
   }
 
-  def followers(): Set[Long] = getAllFollows(twitter.getFollowersIDs)
+  /**
+   * Get the full Set of users who follow me
+   */
+  def followers(): Set[Long] = getAllIds(twitter.getFollowersIDs)
 
-  def following(): Set[Long] = getAllFollows(twitter.getFriendsIDs)
+  /**
+   * Get the full Set of users who I follow
+   */
+  def following(): Set[Long] = getAllIds(twitter.getFriendsIDs)
 
+  /**
+   * helper method for safetly operating over a list of userIds
+   *
+   * @param userIds the userIds on which to operate
+   *
+   * @param f the operation to call
+   */
   private[this] def withUserIds(userIds: Iterable[Long])(f: Long => Unit) {
     userIds foreach { userId =>
       tryAndLogResult("Acting on: %s", userId) {
@@ -78,7 +125,13 @@ class SocialGraph(userId: Long, twitter: Twitter) extends SimpleLogger {
     }
   }
 
-  private[this] def getAllFollows(f: Long => IDs): Set[Long] = {
+  /**
+   * helper method to get a full set of userIds based on a method that takes
+   * a cursor and returns a twitter4j IDs class.
+   *
+   * @param f the cursor method
+   */
+  private[this] def getAllIds(f: Long => IDs): Set[Long] = {
     def dispatch(cursor: Long, accum: Set[Long]): Try[Set[Long]] = {
       Try(f(cursor)) flatMap { ids =>
         val idSet = ids.getIDs.toSet ++ accum
