@@ -13,12 +13,9 @@ case class Credentials(
     consumerKey: String,
     consumerSecret: String)
 
-class FollowBackBot(
-    responder: Responder,
-    timer: Timer = new JavaTimer)
+class FollowBackBot(responder: Responder, timer: Timer = new JavaTimer)
   extends SimpleLogger
 {
-  // override if you have some other way to get credentials
   val credentials =
     Credentials(
       System.getenv("TWITTER_SCREEN_NAME"),
