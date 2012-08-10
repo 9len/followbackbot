@@ -3,7 +3,6 @@ package nu.glen.followbackbot
 import com.twitter.logging.Logger
 import com.twitter.conversions.time._
 import com.twitter.util.{JavaTimer, Timer}
-import org.yaml.snakeyaml.Yaml
 import twitter4j._
 import twitter4j.auth.AccessToken
 
@@ -19,25 +18,15 @@ class FollowBackBot(
     timer: Timer = new JavaTimer)
   extends SimpleLogger
 {
-  Logger.reset()
-  log.info("STARTING UP")
-
-  val credentialFilename = "credentials.yml"
-
-  val credentials = {
-    val credentialYaml = io.Source.fromFile(credentialFilename).mkString
-    val yaml = new Yaml
-
-    val credentialMap = yaml.load(credentialYaml).asInstanceOf[java.util.Map[String, String]]
-
+  // override if you have some other way to get credentials
+  val credentials =
     Credentials(
-      credentialMap.get("screen_name"),
-      credentialMap.get("token"),
-      credentialMap.get("secret"),
-      credentialMap.get("consumer_key"),
-      credentialMap.get("consumer_secret")
+      System.getenv("TWITTER_SCREEN_NAME"),
+      System.getenv("TWITTER_ACCESS_TOKEN"),
+      System.getenv("TWITTER_TOKEN_SECRET"),
+      System.getenv("TWITTER_CONSUMER_KEY"),
+      System.getenv("TWITTER_CONSUMER_SECRET")
     )
-  }
 
   val twitter = new TwitterFactory().getInstance()
   twitter.setOAuthConsumer(credentials.consumerKey, credentials.consumerSecret)
@@ -52,7 +41,17 @@ class FollowBackBot(
   stream.addListener(listener)
   stream.user()
 
-  timer.schedule(5.seconds.fromNow, 10.minutes) {
-    fixer()
+  initLogger()
+  startFixer()
+
+  def initLogger() {
+    Logger.reset()
+    log.info("STARTING UP")
+  }
+
+  def startFixer() {
+    timer.schedule(5.seconds.fromNow, 10.minutes) {
+      fixer()
+    }
   }
 }
