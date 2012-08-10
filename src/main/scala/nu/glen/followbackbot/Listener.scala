@@ -5,40 +5,31 @@ import twitter4j._
 class Listener(
     screenName: String,
     responder: Responder,
-    follow: Follow,
+    socialGraph: SocialGraph,
     twitter: Twitter)
   extends UserStreamListener
   with SimpleLogger
 {
-  def isMe(sn: String) = sn.toLowerCase == screenName.toLowerCase
+  def isMe(user: User) = user.getScreenName.toLowerCase == screenName.toLowerCase
 
   def isMyOwnRetweet(status: Status) =
     status.getText.toLowerCase.startsWith("rt @" + screenName.toLowerCase)
 
   override def onStatus(status: Status) {
-    val statusScreenName = status.getUser.getScreenName
-    log.info("Got Status: @%s: %s", statusScreenName, status.getText)
+    log.info("Got Status: @%s: %s", status.getUser.getScreenName, status.getText)
 
-    if (isMe(statusScreenName)) {
+    if (isMe(status.getUser)) {
       log.info(" Ignoring my own status")
     } else if (isMyOwnRetweet(status)) {
       log.info(" Ignoring a retweet of my own status")
     } else {
       responder(status) match {
         case Some(statusUpdate) =>
-          tryAndLogResult(" Replying with %s", statusUpdate.getStatus) {
-            val statusScreenName = status.getUser.getScreenName
-
-            log.info(" Making sure @%s still follows me", statusScreenName)
-            if (twitter.existsFriendship(statusScreenName, screenName)) {
-              // only send the reply if the tweeter still follows us
-              log.info(" Tweeting: %s", statusUpdate.getStatus)
-              twitter.updateStatus(statusUpdate)
-            } else {
-              // otherwise, destroy the mutual follow
-              log.info(" No longer following me, unfollowing: %s", statusScreenName)
-              twitter.destroyFriendship(statusScreenName)
-            }
+          val text = statusUpdate.getStatus
+          // only send the reply if the tweeter still follows us
+          socialGraph.ifFollowing(status.getUser.getId, " Replying with %s", text) {
+            log.info(" Tweeting: %s", text)
+            twitter.updateStatus(statusUpdate)
           }
 
         case None => log.info(" Ignoring ineligible status")
@@ -47,14 +38,18 @@ class Listener(
   }
 
   override def onFollow(source: User, followedUser: User) {
-    val sourceScreenName = source.getScreenName
-    log.info("Got follow notification: %s -> %s", sourceScreenName, followedUser.getScreenName)
+    log.info(
+      "Got follow notification: %s/%d -> %s/%d",
+      source.getScreenName,
+      source.getId,
+      followedUser.getScreenName,
+      followedUser.getId
+    )
 
-    if (isMe(sourceScreenName)) {
+    if (isMe(source))
       log.info(" Ignoring notification of my own actions")
-    } else {
-      follow(screenName, source)
-    }
+    else
+      socialGraph.follow(source.getId, Some(source.isProtected))
   }
 
   override def onException(ex: Exception) = ()
