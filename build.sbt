@@ -1,3 +1,7 @@
+import com.typesafe.startscript.StartScriptPlugin
+
+seq(StartScriptPlugin.startScriptForClassesSettings: _*)
+
 name := "FollowBackBot"
 
 version := "0.1.0"
@@ -21,7 +25,5 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest"       % "1.8"   % "test",
   "org.mockito"   % "mockito-core"     % "1.9.0" % "test"
 )
-
-seq(com.github.retronym.SbtOneJar.oneJarSettings: _*)
 
 scalacOptions += "-deprecation"
