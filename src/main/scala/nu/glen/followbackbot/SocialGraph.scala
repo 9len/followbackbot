@@ -34,7 +34,7 @@ class SocialGraph(userId: Long, twitter: Twitter) extends SimpleLogger {
    *
    * @param target the userId to inspect
    */
-  def following(target: Long): Boolean =
+  def isFollowing(target: Long): Boolean =
     twitter.showFriendship(userId, target).isSourceFollowingTarget
 
   /**
@@ -42,7 +42,7 @@ class SocialGraph(userId: Long, twitter: Twitter) extends SimpleLogger {
    *
    * @param target the userId to inspect
    */
-  def followedBy(target: Long): Boolean =
+  def isFollowedBy(target: Long): Boolean =
     twitter.showFriendship(target, userId).isSourceFollowingTarget
 
   /**
@@ -53,7 +53,7 @@ class SocialGraph(userId: Long, twitter: Twitter) extends SimpleLogger {
    * @param isProtected if known, whether or not the user is protected
    */
   def follow(target: Long, isProtected: Option[Boolean] = None): Unit = synchronized {
-    if (following(target)) {
+    if (isFollowing(target)) {
       log.info(" Already following %s", target)
     } else {
       val followRequestAlreadySent = isProtected match {
@@ -92,10 +92,10 @@ class SocialGraph(userId: Long, twitter: Twitter) extends SimpleLogger {
    *
    * @param f the action to perform
    */
-  def ifFollowing(target: Long, f: Action, msg: String, args: Any*): Unit = synchronized {
+  def ifFollowedBy(target: Long, f: Action, msg: String, args: Any*): Unit = synchronized {
     tryAndLogResult(msg, args) {
       log.info(" Making sure user still follows me")
-      if (followedBy(target)) {
+      if (isFollowedBy(target)) {
         f()
       } else {
         // otherwise, destroy the mutual follow

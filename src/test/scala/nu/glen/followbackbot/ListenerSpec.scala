@@ -1,7 +1,6 @@
 package nu.glen.followbackbot
 
 import org.mockito.Matchers._
-import org.mockito.ArgumentCaptor
 import org.mockito.Mockito._
 import org.scalatest.FunSpec
 import org.scalatest.mock.MockitoSugar
@@ -36,7 +35,7 @@ class ListenerSpec extends FunSpec with MockitoSugar {
       when(status.getUser).thenReturn(me)
       when(status.getText).thenReturn("foobar")
       listener.onStatus(status)
-      verify(socialGraph, never).ifFollowing(anyLong, any[Action], anyString, any[Seq[Any]]: _*)
+      verify(socialGraph, never).ifFollowedBy(anyLong, any[Action], anyString, any[Seq[Any]]: _*)
     }
 
     it("should ignore retweet of my status") {
@@ -44,7 +43,7 @@ class ListenerSpec extends FunSpec with MockitoSugar {
       when(status.getUser).thenReturn(them)
       when(status.getText).thenReturn("RT @foo: foobarbaz")
       listener.onStatus(status)
-      verify(socialGraph, never).ifFollowing(anyLong, any[Action], anyString, any[Seq[Any]]: _*)
+      verify(socialGraph, never).ifFollowedBy(anyLong, any[Action], anyString, any[Seq[Any]]: _*)
     }
 
     it("should ignore status with no response") {
@@ -54,10 +53,10 @@ class ListenerSpec extends FunSpec with MockitoSugar {
       when(responder(status)).thenReturn(None)
       listener.onStatus(status)
       verify(responder)(status)
-      verify(socialGraph, never).ifFollowing(anyLong, any[Action], anyString, any[Seq[Any]]: _*)
+      verify(socialGraph, never).ifFollowedBy(anyLong, any[Action], anyString, any[Seq[Any]]: _*)
     }
 
-    it("call ifFollowing for good status") {
+    it("call ifFollowedBy for good status") {
       val status = mock[Status]
       when(status.getUser).thenReturn(them)
       when(status.getText).thenReturn("foobarbaz")
@@ -66,7 +65,7 @@ class ListenerSpec extends FunSpec with MockitoSugar {
       when(responder(status)).thenReturn(Some(statusUpdate))
       listener.onStatus(status)
       verify(responder)(status)
-      verify(socialGraph).ifFollowing(them.getId, tweetAction, " Replying with %s", "meh")
+      verify(socialGraph).ifFollowedBy(them.getId, tweetAction, " Replying with %s", "meh")
     }
   }
 

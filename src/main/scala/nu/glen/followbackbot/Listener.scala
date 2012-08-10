@@ -41,7 +41,7 @@ class Listener(
   /**
    * simple check should catch both old- and new-school RTs
    */
-  protected[this] def isMyOwnRetweet(status: Status)
+  protected[this] def isMyOwnRetweet(status: Status) =
     status.getText.toLowerCase.startsWith("rt @" + screenName.toLowerCase + ":")
 
   /**
@@ -61,7 +61,7 @@ class Listener(
       responder(status) match {
         case Some(statusUpdate) =>
           // only send the reply if the tweeter still follows us
-          socialGraph.ifFollowing(
+          socialGraph.ifFollowedBy(
             status.getUser.getId,
             TweetAction(twitter, statusUpdate),
             " Replying with %s",
@@ -73,6 +73,9 @@ class Listener(
     }
   }
 
+  /**
+   * follow back if source isn't the bot
+   */
   override def onFollow(source: User, followedUser: User) {
     log.info(
       "Got follow notification: %s/%d -> %s/%d",
