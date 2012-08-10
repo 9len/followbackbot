@@ -3,6 +3,11 @@ package nu.glen.followbackbot
 import com.twitter.util.{Return, Try}
 import twitter4j._
 
+/**
+ * This is a little shim to help us unit test ifFollowing more easily
+ */
+trait Action extends (() => Unit)
+
 class SocialGraph(userId: Long, twitter: Twitter) extends SimpleLogger {
   /**
    * Ensure that everyone following me is followed by me, unfollow anyone who no loner follows me
@@ -87,11 +92,11 @@ class SocialGraph(userId: Long, twitter: Twitter) extends SimpleLogger {
    *
    * @param f the action to perform
    */
-  def ifFollowing(target: Long, msg: String, args: Any*)(f: => Any): Unit = synchronized {
-    tryAndLogResult(msg, args: _*) {
+  def ifFollowing(target: Long, f: Action, msg: String, args: Any*): Unit = synchronized {
+    tryAndLogResult(msg, args) {
       log.info(" Making sure user still follows me")
       if (followedBy(target)) {
-        f
+        f()
       } else {
         // otherwise, destroy the mutual follow
         log.info(" No longer following me, unfollowing")

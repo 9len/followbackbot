@@ -2,6 +2,15 @@ package nu.glen.followbackbot
 
 import twitter4j._
 
+case class TweetAction(twitter: Twitter, statusUpdate: StatusUpdate)
+  extends Action with SimpleLogger
+{
+  override def apply() {
+    log.info(" Tweeting: %s", statusUpdate.getStatus)
+    twitter.updateStatus(statusUpdate)
+  }
+}
+
 class Listener(
     userId: Long,
     screenName: String,
@@ -15,7 +24,7 @@ class Listener(
 
   def isMyOwnRetweet(status: Status) = {
     // simple check should catch both old- and new-school RTs
-    status.getText.toLowerCase.startsWith("rt @" + screenName.toLowerCase)
+    status.getText.toLowerCase.startsWith("rt @" + screenName.toLowerCase + ":")
   }
 
   override def onStatus(status: Status) {
@@ -28,12 +37,13 @@ class Listener(
     } else {
       responder(status) match {
         case Some(statusUpdate) =>
-          val text = statusUpdate.getStatus
           // only send the reply if the tweeter still follows us
-          socialGraph.ifFollowing(status.getUser.getId, " Replying with %s", text) {
-            log.info(" Tweeting: %s", text)
-            twitter.updateStatus(statusUpdate)
-          }
+          socialGraph.ifFollowing(
+            status.getUser.getId,
+            TweetAction(twitter, statusUpdate),
+            " Replying with %s",
+            statusUpdate.getStatus
+          )
 
         case None => log.info(" Ignoring ineligible status")
       }
