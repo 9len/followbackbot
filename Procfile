@@ -1,0 +1,1 @@
+worker: target/start YourMomBot
