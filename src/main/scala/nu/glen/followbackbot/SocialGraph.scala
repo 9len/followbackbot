@@ -122,7 +122,7 @@ class SocialGraph(userId: Long, twitter: Twitter) extends SimpleLogger {
    *
    * @param f the operation to call
    */
-  private[this] def withUserIds(userIds: Iterable[Long])(f: Long => Unit) {
+  protected[this] def withUserIds(userIds: Iterable[Long])(f: Long => Unit) {
     userIds foreach { userId =>
       tryAndLogResult("Acting on: %s", userId) {
         f(userId)
@@ -136,7 +136,7 @@ class SocialGraph(userId: Long, twitter: Twitter) extends SimpleLogger {
    *
    * @param f the cursor method
    */
-  private[this] def getAllIds(f: Long => IDs): Set[Long] = {
+  protected[this] def getAllIds(f: Long => IDs): Set[Long] = {
     def dispatch(cursor: Long, accum: Set[Long]): Try[Set[Long]] = {
       Try(f(cursor)) flatMap { ids =>
         val idSet = ids.getIDs.toSet ++ accum

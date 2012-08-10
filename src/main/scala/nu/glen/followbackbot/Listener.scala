@@ -2,6 +2,10 @@ package nu.glen.followbackbot
 
 import twitter4j._
 
+/**
+ * This is just a wrapper around a call to updateStatus with logging. It's a case class
+ * so that it can be easily compared in unit tests
+ */
 case class TweetAction(twitter: Twitter, statusUpdate: StatusUpdate)
   extends Action with SimpleLogger
 {
@@ -11,6 +15,18 @@ case class TweetAction(twitter: Twitter, statusUpdate: StatusUpdate)
   }
 }
 
+/**
+ * A UserStreamListener that responds to the following events:
+ *
+ * onFollow: follows back
+ * onStatus: replies if the responder produces a response to the status
+ *
+ * @param userId the userId of the bot
+ * @param screenName the screenName of the bot
+ * @param responder the Responder for status processing
+ * @param socialGraph used to process follow/unfollow actions
+ * @param twitter used to call the Twitter API
+ */
 class Listener(
     userId: Long,
     screenName: String,
@@ -20,13 +36,20 @@ class Listener(
   extends UserStreamListener
   with SimpleLogger
 {
-  def isMe(user: User) = user.getId == userId
+  protected[this] def isMe(user: User) = user.getId == userId
 
-  def isMyOwnRetweet(status: Status) = {
-    // simple check should catch both old- and new-school RTs
+  /**
+   * simple check should catch both old- and new-school RTs
+   */
+  protected[this] def isMyOwnRetweet(status: Status)
     status.getText.toLowerCase.startsWith("rt @" + screenName.toLowerCase + ":")
-  }
 
+  /**
+   * reply to the status iff:
+   *  - the status's user is not the bot
+   *  - the status is not a retweet of a previous bot tweet
+   *  - the responder produces a response
+   */
   override def onStatus(status: Status) {
     log.info("Got Status: @%s: %s", status.getUser.getScreenName, status.getText)
 
@@ -65,18 +88,16 @@ class Listener(
       socialGraph.follow(source.getId, Some(source.isProtected))
   }
 
-  override def onException(ex: Exception) = ()
-
-  override def onDeletionNotice(statusDeletionNotice: StatusDeletionNotice) = ()
-  override def onScrubGeo(userId: Long, upToStatusId: Long) = ()
-  override def onTrackLimitationNotice(numberOfLimitedStatuses: Int) = ()
-
   override def onBlock(source: User, blockedUser: User) = ()
   override def onDeletionNotice(directMessageId: Long, userId: Long) = ()
+  override def onDeletionNotice(statusDeletionNotice: StatusDeletionNotice) = ()
   override def onDirectMessage(directMessage: DirectMessage) = ()
+  override def onException(ex: Exception) = ()
   override def onFavorite(source: User, target: User, favoritedStatus: Status) = ()
   override def onFriendList(friendIds: Array[Long]) = ()
   override def onRetweet(source: User, target: User, retweetedStatus: Status) = ()
+  override def onScrubGeo(userId: Long, upToStatusId: Long) = ()
+  override def onTrackLimitationNotice(numberOfLimitedStatuses: Int) = ()
   override def onUnblock(source: User, unblockedUser: User) = ()
   override def onUnfavorite(source: User, target: User, unfavoritedStatus: Status) = ()
   override def onUserListCreation(listOwner: User, list: UserList) = ()
