@@ -5,9 +5,9 @@ FollowBackBot is a scala library for twitter API bots that follow/unfollow back 
 
 FollowBackBot uses [Twitter4j](http://twitter4j.org) to access both the REST and streaming Twitter APIs. The UserStream is used to monitor follows and statuses, and a periodic "reciprocity" process runs to make sure follow/unfollows are respected.
 
-A `Responder` class defines what statuses are responded to, and is simply a type alias for `twitter4j.Status => Option[twitter4j.StatusUpdate]`. A `SimpleResponder` class, which is a type alias for `String => Option[String]`, can also be used, with the `Responder.simple(_)` method.
+A `Responder` class defines what statuses are responded to, and is simply a type alias for `twitter4j.Status => Option[twitter4j.StatusUpdate]`. A `SimpleResponder` class, which is a type alias for `String => Option[String]`, can also be used, with the `Responder.simple(_)` method, which takes care of truncation, proper handling of retweeted text, and setting `in_reply_to_status_id`.
 
-An example is provided, the source code for the @YourMomBot account. Creating a new bot is as simple as defining a single function:
+An example is provided, the source code for the [@YourMomBot](http://twitter.com/yourmombot) account. Creating a new bot is as simple as defining a single function:
 
     package nu.glen.yourmombot
 
