@@ -26,5 +26,10 @@ class YourMomResponderSpec extends FunSpec {
       val result = YourMomResponder("foobar")
       assert(result == None)
     }
+
+    it("should handle hyphens") {
+      val result = YourMomResponder("@foobar It's baby-triggered laziness related. It predates leave by about 2 weeks, but the beard-growing really progressed afterwards.")
+      assert(result == Some("Your mom's beard-growing really progressed afterwards."))
+    }
   }
 }
