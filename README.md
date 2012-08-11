@@ -27,7 +27,7 @@ An example is provided, the source code for the [@YourMomBot](http://twitter.com
 
     object YourMomBot extends FollowBackBot(Responder.simple(YourMomResponder)) with App
 
-FollowBackBot authenticats with OAuth, and requires the presense of the following system properties or environment variables:
+FollowBackBot authenticates with OAuth, and requires the presense of the following system properties or environment variables:
 
     TWITTER_SCREEN_NAME
     TWITTER_ACCESS_TOKEN
