@@ -1,6 +1,7 @@
 package nu.glen.followbackbot
 
-import com.twitter.util.{Return, Try}
+import annotation.tailrec
+import com.twitter.util.{Return, Throw, Try}
 import twitter4j._
 
 /**
@@ -48,6 +49,12 @@ class SocialGraph(userId: Long, twitter: Twitter) extends SimpleLogger {
   /**
    * Follow a user. Will not follow if already following, or if the user is protected
    * and a follow request has already been sent.
+   *
+   * The two current use cases for this method are:
+   *  - reciprocation, in which we don't need to check that the user is following
+   *  - onFollow from the userStream, in which we need to check if the user is following, and
+   *    we know that the user is or isn't protected, but don't know if a follow request has
+   *    been sent, because the stream doesn't reliably include that field.
    *
    * @param the target the userId to follow
    * @param isProtected if known, whether or not the user is protected
@@ -142,14 +149,19 @@ class SocialGraph(userId: Long, twitter: Twitter) extends SimpleLogger {
    * @param f the cursor method
    */
   protected[this] def getAllIds(f: Long => IDs): Set[Long] = {
+    @tailrec
     def dispatch(cursor: Long, accum: Set[Long]): Try[Set[Long]] = {
-      Try(f(cursor)) flatMap { ids =>
-        val idSet = ids.getIDs.toSet ++ accum
+      // we use an explicit match here rather than a flatMap so that
+      // we can make it tail recursive
+      Try(f(cursor)) match {
+        case Throw(t) => Throw(t)
+        case Return(ids) =>
+          val idSet = ids.getIDs.toSet ++ accum
 
-        if (ids.hasNext)
-          dispatch(ids.getNextCursor, idSet)
-        else
-          Return(idSet)
+          if (ids.hasNext)
+            dispatch(ids.getNextCursor, idSet)
+          else
+            Return(idSet)
       }
     }
 
