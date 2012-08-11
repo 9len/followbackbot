@@ -23,7 +23,7 @@ class SocialGraph(userId: Long, twitter: Twitter) extends SimpleLogger {
     val toUnfollow = allFollowing.diff(allFollowers)
 
     log.info("To Follow: %s", toFollow)
-    withUserIds(toFollow)(follow(_))
+    withUserIds(toFollow)(follow(_, None, false))
 
     log.info("To Unfollow: %s", toUnfollow)
     withUserIds(toUnfollow)(unfollow(_))
@@ -51,9 +51,14 @@ class SocialGraph(userId: Long, twitter: Twitter) extends SimpleLogger {
    *
    * @param the target the userId to follow
    * @param isProtected if known, whether or not the user is protected
+   * @param checkAlreadyFollowed check to see if the user already followed, don't follow if so
    */
-  def follow(target: Long, isProtected: Option[Boolean] = None): Unit = synchronized {
-    if (isFollowing(target)) {
+  def follow(
+    target: Long,
+    isProtected: Option[Boolean],
+    checkAlreadyFollowed: Boolean
+  ): Unit = synchronized {
+    if (checkAlreadyFollowed && isFollowing(target)) {
       log.info(" Already following %s", target)
     } else {
       val followRequestAlreadySent = isProtected match {

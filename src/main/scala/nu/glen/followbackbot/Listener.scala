@@ -88,7 +88,7 @@ class Listener(
     if (isMe(source))
       log.info(" Ignoring notification of my own actions")
     else
-      socialGraph.follow(source.getId, Some(source.isProtected))
+      socialGraph.follow(source.getId, Some(source.isProtected), true)
   }
 
   override def onBlock(source: User, blockedUser: User) = ()

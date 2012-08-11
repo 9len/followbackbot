@@ -72,19 +72,19 @@ class ListenerSpec extends FunSpec with MockitoSugar {
   describe("Listener.onFollow") {
     it("should ignore my follows") {
       listener.onFollow(me, them)
-      verify(socialGraph, never).follow(anyLong, any[Option[Boolean]])
+      verify(socialGraph, never).follow(anyLong, any[Option[Boolean]], any[Boolean])
     }
 
     it("should follow back, pass protected = false") {
       when(them.isProtected).thenReturn(false)
       listener.onFollow(them, me)
-      verify(socialGraph).follow(200, Some(false))
+      verify(socialGraph).follow(200, Some(false), true)
     }
 
     it("should follow back, pass protected = true") {
       when(them.isProtected).thenReturn(true)
       listener.onFollow(them, me)
-      verify(socialGraph).follow(200, Some(true))
+      verify(socialGraph).follow(200, Some(true), true)
     }
   }
 }
