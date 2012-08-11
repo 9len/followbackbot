@@ -25,60 +25,117 @@ class SocialGraphSpec extends FunSpec with MockitoSugar {
   when(ids2.hasNext).thenReturn(false)
   when(ids2.getIDs).thenReturn(Array(5L, 6L))
 
+  object NextTarget {
+    private[this] var i = 0
+
+    def apply() = {
+      i += 1
+      100 + i
+    }
+  }
+
   describe("SocialGraph.reciprocate") {
 
   }
 
   describe("SocialGraph.isFollowing") {
     it("should return true if following and false if not") {
-      when(twitter.showFriendship(100, 200)).thenReturn(trueFriendship)
-      assert(socialGraph.isFollowing(200))
-      verify(twitter).showFriendship(100, 200)
+      val target = NextTarget()
+      when(twitter.showFriendship(100, target)).thenReturn(trueFriendship)
+      assert(socialGraph.isFollowing(target))
+      verify(twitter).showFriendship(100, target)
     }
 
     it("should return false if not following") {
-      when(twitter.showFriendship(100, 300)).thenReturn(falseFriendship)
-      assert(!socialGraph.isFollowing(300))
-      verify(twitter).showFriendship(100, 300)
+      val target = NextTarget()
+      when(twitter.showFriendship(100, target)).thenReturn(falseFriendship)
+      assert(!socialGraph.isFollowing(target))
+      verify(twitter).showFriendship(100, target)
     }
   }
 
   describe("SocialGraph.isFollowedBy") {
     it("should return true if followed by") {
-      when(twitter.showFriendship(200, 100)).thenReturn(trueFriendship)
-      assert(socialGraph.isFollowedBy(200))
-      verify(twitter).showFriendship(200, 100)
+      val target = NextTarget()
+      when(twitter.showFriendship(target, 100)).thenReturn(trueFriendship)
+      assert(socialGraph.isFollowedBy(target))
+      verify(twitter).showFriendship(target, 100)
     }
 
     it("should return false if not followed by") {
-      when(twitter.showFriendship(300, 100)).thenReturn(falseFriendship)
-      assert(!socialGraph.isFollowedBy(300))
-      verify(twitter).showFriendship(300, 100)
+      val target = NextTarget()
+      when(twitter.showFriendship(target, 100)).thenReturn(falseFriendship)
+      assert(!socialGraph.isFollowedBy(target))
+      verify(twitter).showFriendship(target, 100)
     }
   }
 
   describe("SocialGraph.follow") {
+    def mkUser(isProtected: Boolean, isFollowRequestSent: Boolean) = {
+      val user = mock[User]
+      when(user.isProtected).thenReturn(isProtected)
+      when(user.isFollowRequestSent).thenReturn(isFollowRequestSent)
+      user
+    }
+
     for (isProtected <- List(Some(true), Some(false), None)) {
       it("should not follow if already following if isProtected == " + isProtected) {
-
+        val target = NextTarget()
+        when(twitter.showFriendship(100, target)).thenReturn(trueFriendship)
+        socialGraph.follow(target, isProtected)
+        verify(twitter).showFriendship(100, target)
+        verify(twitter, never).showUser(target)
+        verify(twitter, never).createFriendship(target)
       }
     }
-    for (isProtected <- List(Some(true), None)) {
-      it("should lookup user if isProtected == %s and follow if not protected".format(isProtected)) {
 
+    for (isProtected <- List(Some(true), None)) {
+      it("should lookup user if isProtected == %s and not follow if protected and follow request sent".format(isProtected)) {
+        val target = NextTarget()
+        val user = mkUser(true, true)
+        when(twitter.showFriendship(100, target)).thenReturn(falseFriendship)
+        when(twitter.showUser(target)).thenReturn(user)
+        socialGraph.follow(target, isProtected)
+        verify(twitter).showFriendship(100, target)
+        verify(twitter).showUser(target)
+        verify(twitter, never).createFriendship(target)
       }
 
       it("should lookup user if isProtected == %s and follow if protected and follow request not sent".format(isProtected)) {
-
+        val target = NextTarget()
+        val user = mkUser(true, false)
+        when(twitter.showFriendship(100, target)).thenReturn(falseFriendship)
+        when(twitter.showUser(target)).thenReturn(user)
+        socialGraph.follow(target, isProtected)
+        verify(twitter).showFriendship(100, target)
+        verify(twitter).showUser(target)
+        verify(twitter).createFriendship(target)
       }
 
-      it("should lookup user if isProtected == %s and not follow if protected and follow request sent".format(isProtected)) {
-
+      it("should lookup user if isProtected == %s and follow if not actually protected".format(isProtected)) {
+        val target = NextTarget()
+        val user = mkUser(false, false)
+        when(twitter.showFriendship(100, target)).thenReturn(falseFriendship)
+        when(twitter.showUser(target)).thenReturn(user)
+        socialGraph.follow(target, isProtected)
+        verify(user, never).isFollowRequestSent
+        verify(twitter).showFriendship(100, target)
+        verify(twitter).showUser(target)
+        verify(twitter).createFriendship(target)
       }
     }
 
     it("should not lookup user if isProtected == Some(false) and follow") {
-
+      val target = NextTarget()
+      val user = mkUser(false, false)
+      when(twitter.showFriendship(100, target)).thenReturn(falseFriendship)
+      when(twitter.showUser(target)).thenReturn(user)
+      socialGraph.follow(target, Some(false))
+      verify(user, never).isProtected
+      verify(user, never).isFollowRequestSent
+      verify(twitter).showFriendship(100, target)
+      verify(twitter, never).showUser(target)
+      verify(twitter).createFriendship(target)
     }
   }
 
@@ -98,19 +155,21 @@ class SocialGraphSpec extends FunSpec with MockitoSugar {
     }
 
     it("should invoke action if following") {
+      val target = NextTarget()
       assert(latch == "foo")
-      when(twitter.showFriendship(400, 100)).thenReturn(trueFriendship)
-      socialGraph.ifFollowedBy(400, action("bar"), "blegga")
+      when(twitter.showFriendship(target, 100)).thenReturn(trueFriendship)
+      socialGraph.ifFollowedBy(target, action("bar"), "blegga")
       assert(latch == "bar")
-      verify(twitter).showFriendship(400, 100)
+      verify(twitter).showFriendship(target, 100)
     }
 
     it("should not invoke action if following") {
+      val target = NextTarget()
       assert(latch == "bar")
-      when(twitter.showFriendship(500, 100)).thenReturn(falseFriendship)
-      socialGraph.ifFollowedBy(500, action("baz"), "blegga")
+      when(twitter.showFriendship(target, 100)).thenReturn(falseFriendship)
+      socialGraph.ifFollowedBy(target, action("baz"), "blegga")
       assert(latch == "bar")
-      verify(twitter).showFriendship(500, 100)
+      verify(twitter).showFriendship(target, 100)
     }
   }
 
