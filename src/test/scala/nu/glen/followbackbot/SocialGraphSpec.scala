@@ -9,8 +9,10 @@ import twitter4j._
 class SocialGraphSpec extends FunSpec with MockitoSugar {
   val userId = 100
 
+  val blacklisted = 10000
+
   val twitter = mock[Twitter]
-  val socialGraph = new SocialGraph(userId, twitter)
+  val socialGraph = new SocialGraph(userId, twitter, Set(blacklisted))
 
   val trueFriendship = mock[Relationship]
   when(trueFriendship.isSourceFollowingTarget).thenReturn(true)
@@ -44,7 +46,7 @@ class SocialGraphSpec extends FunSpec with MockitoSugar {
   }
 
   val ids1 = mkIds(Array(1, 2, 3, 4), Some(4))
-  val ids2 = mkIds(Array(5, 6), None)
+  val ids2 = mkIds(Array(5, 6, blacklisted), None)
 
   def mkUser(isProtected: Boolean, isFollowRequestSent: Boolean) = {
     val user = mock[User]
@@ -213,10 +215,19 @@ class SocialGraphSpec extends FunSpec with MockitoSugar {
       assert(latch == "bar")
       verify(twitter).showFriendship(target, userId)
     }
+
+    it("should not invoke action if blacklisted") {
+      val target = 1000
+      assert(latch == "bar")
+      when(twitter.showFriendship(target, userId)).thenReturn(falseFriendship)
+      socialGraph.ifFollowedBy(target, action("baz"), "blegga")
+      assert(latch == "bar")
+      verify(twitter).showFriendship(target, userId)
+    }
   }
 
   describe("SocialGraph.followers") {
-    it("should return all followers") {
+    it("should return all followers, except blacklist") {
       when(twitter.getFollowersIDs(CursorSupport.START)).thenReturn(ids1)
       when(twitter.getFollowersIDs(4)).thenReturn(ids2)
       assert(socialGraph.followers == Set(1L, 2L, 3L, 4L, 5L, 6L))
@@ -230,7 +241,7 @@ class SocialGraphSpec extends FunSpec with MockitoSugar {
     it("should return all following") {
       when(twitter.getFriendsIDs(CursorSupport.START)).thenReturn(ids1)
       when(twitter.getFriendsIDs(4)).thenReturn(ids2)
-      assert(socialGraph.following == Set(1L, 2L, 3L, 4L, 5L, 6L))
+      assert(socialGraph.following == Set(1L, 2L, 3L, 4L, 5L, 6L, blacklisted))
       // twice because of the reciprocate test
       verify(twitter, times(2)).getFriendsIDs(CursorSupport.START)
       verify(twitter).getFriendsIDs(4)

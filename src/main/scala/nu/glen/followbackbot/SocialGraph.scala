@@ -9,7 +9,15 @@ import twitter4j._
  */
 trait Action extends (() => Unit)
 
-class SocialGraph(userId: Long, twitter: Twitter) extends SimpleLogger {
+
+/**
+ * takes care of various social graph-related actions, such as following and unfollowing
+ *
+ * @param userId the userId for the bot
+ * @param twitter the twitter4j.Twitter instance
+ * @param blacklist (optional) a list of userIds to never follow
+ */
+class SocialGraph(userId: Long, twitter: Twitter, blacklist: Set[Long]) extends SimpleLogger {
   /**
    * Ensure that everyone following me is followed by me, unfollow anyone who no loner follows me
    */
@@ -20,8 +28,8 @@ class SocialGraph(userId: Long, twitter: Twitter) extends SimpleLogger {
     log.debug("Followers: %s", allFollowers)
     log.debug("Following: %s", allFollowing)
 
-    val toFollow = allFollowers.diff(allFollowing)
-    val toUnfollow = allFollowing.diff(allFollowers)
+    val toFollow = allFollowers -- allFollowing
+    val toUnfollow = allFollowing -- allFollowers
 
     log.info("To Follow: %s", toFollow)
     withUserIds(toFollow)(follow(_, None, false))
@@ -29,6 +37,13 @@ class SocialGraph(userId: Long, twitter: Twitter) extends SimpleLogger {
     log.info("To Unfollow: %s", toUnfollow)
     withUserIds(toUnfollow)(unfollow(_))
   }
+
+  /**
+   * Is the user blacklisted?
+   *
+   * @param target the userId to inspect
+   */
+  def isBlacklisted(target: Long): Boolean = blacklist.contains(target)
 
   /**
    * Is the user following me?
@@ -65,7 +80,9 @@ class SocialGraph(userId: Long, twitter: Twitter) extends SimpleLogger {
     isProtected: Option[Boolean],
     checkAlreadyFollowed: Boolean
   ): Unit = synchronized {
-    if (checkAlreadyFollowed && isFollowing(target)) {
+    if (isBlacklisted(target)) {
+      log.info(" userId is blacklisted: %s", target)
+    } else if (checkAlreadyFollowed && isFollowing(target)) {
       log.info(" Already following %s", target)
     } else {
       val followRequestAlreadySent = isProtected match {
@@ -107,12 +124,17 @@ class SocialGraph(userId: Long, twitter: Twitter) extends SimpleLogger {
   def ifFollowedBy(target: Long, f: Action, msg: String, args: Any*): Unit = synchronized {
     tryAndLogResult(msg, args) {
       log.info(" Making sure user still follows me")
-      if (isFollowedBy(target)) {
-        f()
-      } else {
+
+      if (isBlacklisted(target)) {
+        // otherwise, destroy the mutual follow
+        log.info(" Blacklisted, unfollowing")
+        unfollow(target)
+      } else if (!isFollowedBy(target)) {
         // otherwise, destroy the mutual follow
         log.info(" No longer following me, unfollowing")
-        twitter.destroyFriendship(target)
+        unfollow(target)
+      } else {
+        f()
       }
     }
   }
@@ -120,7 +142,7 @@ class SocialGraph(userId: Long, twitter: Twitter) extends SimpleLogger {
   /**
    * Get the full Set of users who follow me
    */
-  def followers(): Set[Long] = getAllIds(twitter.getFollowersIDs)
+  def followers(): Set[Long] = getAllIds(twitter.getFollowersIDs) -- blacklist
 
   /**
    * Get the full Set of users who I follow

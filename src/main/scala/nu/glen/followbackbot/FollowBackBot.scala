@@ -13,7 +13,17 @@ case class Credentials(
     consumerKey: String,
     consumerSecret: String)
 
-class FollowBackBot(responder: Responder, timer: Timer = new JavaTimer)
+/**
+ * initializes the Twitter, TwitterStream, Listener and SocialGraph
+ *
+ * @param responder the Responder for statuses
+ * @param blacklist (optional) a Seq of screen names to ignore
+ * @param timer (optional) the timer to use for scheduled reciprocation
+ */
+class FollowBackBot(
+    responder: Responder,
+    blacklist: Seq[String] = Nil,
+    timer: Timer = new JavaTimer)
   extends SimpleLogger
 {
   val credentials =
@@ -34,7 +44,14 @@ class FollowBackBot(responder: Responder, timer: Timer = new JavaTimer)
 
   val userId = twitter.showUser(credentials.screenName).getId
 
-  val socialGraph = new SocialGraph(userId, twitter)
+  val socialGraph =
+    new SocialGraph(
+      userId,
+      twitter,
+      blacklist map {
+        twitter.showUser(_).getId
+      } toSet
+    )
 
   val listener = new Listener(userId, credentials.screenName, responder, socialGraph, twitter)
 
