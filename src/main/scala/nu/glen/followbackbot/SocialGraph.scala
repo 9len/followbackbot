@@ -9,7 +9,6 @@ import twitter4j._
  */
 trait Action extends (() => Unit)
 
-
 /**
  * takes care of various social graph-related actions, such as following and unfollowing
  *
