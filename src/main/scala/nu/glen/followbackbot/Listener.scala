@@ -49,8 +49,8 @@ class Listener(
         case Some(statusUpdate) =>
           tryAndLogResult(
             " Replying (inReplyToStatusId = %s) %s",
+            status.getId,
             statusUpdate.getStatus,
-            status.getId
           ) {
             // only send the reply if the user still follows us
             if (socialGraph.checkOrUnfollow(status.getUser.getId).getOrElse(false)) {

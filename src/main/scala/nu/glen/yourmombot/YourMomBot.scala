@@ -17,3 +17,6 @@ object YourMomBot
     )
   )
   with App
+{
+  override val name = "YourMomBot"
+}
