@@ -36,3 +36,25 @@ object Responder {
     }
   }
 }
+
+/**
+ * Base class for SimpleResponders which extract a keyword which, when processed,
+ * serves as the prefix for the rest of the extracted text. keywords are filtered against
+ * a Set[String] of stop words.
+ */
+abstract class KeywordPrefixResponder(stopWords: Set[String]) extends SimpleResponder {
+  def extract(statusText: String): Option[(String, String)]
+
+  def process(keyword: String): String
+
+  def combine(keyword: String, rest: String) = keyword + rest
+
+  def apply(statusText: String): Option[String] = {
+    extract(statusText) flatMap { case (keyword, rest) =>
+      if (stopWords.contains(keyword))
+        None
+      else
+        Some(combine(process(keyword), rest))
+    }
+  }
+}
