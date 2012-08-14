@@ -52,7 +52,10 @@ object Responder {
  * serves as the prefix for the rest of the extracted text. keywords are filtered against
  * a Set[String] of stop words.
  */
-abstract class KeywordPrefixResponder(stopWords: Set[String]) extends SimpleResponder {
+abstract class KeywordPrefixResponder(stopWords: Set[String])
+  extends SimpleResponder
+  with SimpleLogger
+{
   def extract(statusText: String): Option[(String, String)]
 
   def process(keyword: String): String
@@ -61,10 +64,12 @@ abstract class KeywordPrefixResponder(stopWords: Set[String]) extends SimpleResp
 
   def apply(statusText: String): Option[String] = {
     extract(statusText) flatMap { case (keyword, rest) =>
-      if (stopWords.contains(keyword))
+      if (stopWords.contains(keyword)) {
+        log.info("  Skipping tweet with stopword: %s", keyword)
         None
-      else
+      } else {
         Some(combine(process(keyword), rest))
+      }
     }
   }
 }

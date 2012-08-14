@@ -5,7 +5,18 @@ import nu.glen.followbackbot.KeywordPrefixResponder
 object YourMomGerrundResponder
   extends KeywordPrefixResponder(
     Set(
-      "during"
+      "during",
+      "evening",
+      "thing",
+      "effing",
+      "everything",
+      "something",
+      "spring",
+      "nothing",
+      "morning",
+      "anything",
+      "interesting",
+      "king"
     )
   )
 {
