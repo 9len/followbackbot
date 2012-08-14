@@ -49,7 +49,7 @@ class SimpleRateLimiter(resolution: Duration, maxValue: Int, maxSize: Int)
   override def apply(user: User): Boolean = {
     val value = cache.getOrElseUpdate(user.getId, new AtomicInteger(0)).incrementAndGet()
     val limited = value > maxValue
-    if (limited) println("%s: rate limited %s".format(name, user.getScreenName))
+    if (limited) log.info("rate limited %s", user.getScreenName)
     limited
   }
 }
