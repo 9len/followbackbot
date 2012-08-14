@@ -1,5 +1,6 @@
 package nu.glen.followbackbot
 
+import com.twitter.util.{Return, Throw}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.FunSpec
@@ -7,9 +8,9 @@ import org.scalatest.mock.MockitoSugar
 import twitter4j._
 
 class SocialGraphSpec extends FunSpec with MockitoSugar {
-  val userId = 100
+  val userId = 100L
 
-  val blacklisted = 10000
+  val blacklisted = 10000L
 
   val twitter = mock[Twitter]
   val socialGraph = new SocialGraph(userId, twitter, Set(blacklisted))
@@ -190,38 +191,36 @@ class SocialGraphSpec extends FunSpec with MockitoSugar {
     }
   }
 
-  describe("SocialGraph.ifFollowedBy") {
-    var latch = "foo"
-    def action(str: String) = new Action {
-      override def apply() {
-        latch = str
-      }
-    }
-
-    it("should invoke action if following") {
+  describe("SocialGraph.checkOrUnfollow") {
+    it("should return Return(true) if following") {
       val target = NextTarget()
-      assert(latch == "foo")
       when(twitter.showFriendship(target, userId)).thenReturn(trueFriendship)
-      socialGraph.ifFollowedBy(target, action("bar"), "blegga")
-      assert(latch == "bar")
+      val result = socialGraph.checkOrUnfollow(target)
+      assert(result == Return(true))
       verify(twitter).showFriendship(target, userId)
     }
 
-    it("should not invoke action if following") {
+    it("should return Return(false) if not following") {
       val target = NextTarget()
-      assert(latch == "bar")
       when(twitter.showFriendship(target, userId)).thenReturn(falseFriendship)
-      socialGraph.ifFollowedBy(target, action("baz"), "blegga")
-      assert(latch == "bar")
+      val result = socialGraph.checkOrUnfollow(target)
+      assert(result == Return(false))
       verify(twitter).showFriendship(target, userId)
     }
 
-    it("should not invoke action if blacklisted") {
-      val target = 1000
-      assert(latch == "bar")
-      when(twitter.showFriendship(target, userId)).thenReturn(falseFriendship)
-      socialGraph.ifFollowedBy(target, action("baz"), "blegga")
-      assert(latch == "bar")
+    it("should return Return(false) if blacklisted") {
+      val target = blacklisted
+      val result = socialGraph.checkOrUnfollow(target)
+      assert(result == Return(false))
+      verify(twitter, never).showFriendship(blacklisted, userId)
+    }
+
+    it("should handle exception") {
+      val target = NextTarget()
+      val ex = new RuntimeException
+      when(twitter.showFriendship(target, userId)).thenThrow(ex)
+      val result = socialGraph.checkOrUnfollow(target)
+      assert(result == Throw(ex))
       verify(twitter).showFriendship(target, userId)
     }
   }

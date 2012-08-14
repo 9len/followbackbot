@@ -3,19 +3,6 @@ package nu.glen.followbackbot
 import twitter4j._
 
 /**
- * This is just a wrapper around a call to updateStatus with logging. It's a case class
- * so that it can be easily compared in unit tests
- */
-case class TweetAction(twitter: Twitter, statusUpdate: StatusUpdate)
-  extends Action with SimpleLogger
-{
-  override def apply() {
-    log.info(" Tweeting: %s", statusUpdate.getStatus)
-    twitter.updateStatus(statusUpdate)
-  }
-}
-
-/**
  * A UserStreamListener that responds to the following events:
  *
  * onFollow: follows back
@@ -60,13 +47,17 @@ class Listener(
     } else {
       responder(status) match {
         case Some(statusUpdate) =>
-          // only send the reply if the tweeter still follows us
-          socialGraph.ifFollowedBy(
-            status.getUser.getId,
-            TweetAction(twitter, statusUpdate),
-            " Replying with %s",
-            statusUpdate.getStatus
-          )
+          tryAndLogResult(
+            " Replying (inReplyToStatusId = %s) %s",
+            statusUpdate.getStatus,
+            status.getId
+          ) {
+            // only send the reply if the user still follows us
+            if (socialGraph.checkOrUnfollow(status.getUser.getId).getOrElse(false)) {
+              log.info(" Tweeting: %s", statusUpdate.getStatus)
+              twitter.updateStatus(statusUpdate)
+            }
+          }
 
         case None => log.info(" Ignoring ineligible status")
       }

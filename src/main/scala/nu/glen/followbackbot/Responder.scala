@@ -29,7 +29,7 @@ object Responder {
         else
           withReply
 
-      new StatusUpdate(trimmed).inReplyToStatusId(status.getId)
+      (new StatusUpdate(trimmed)).inReplyToStatusId(status.getId)
     }
   }
 
@@ -39,15 +39,17 @@ object Responder {
 
       override def apply(status: Status): Option[StatusUpdate] = {
         responder.apply(status) flatMap { statusUpdate =>
-          log.info("Would have tweeted: %s", statusUpdate.getStatus)
+          log.info(" Would have tweeted: %s", statusUpdate.getStatus)
           None
         }
       }
     }
 
-  def compose(thisResponder: Responder, thatResponder: Responder): Responder = { status =>
-    thisResponder(status) orElse thatResponder(status)
-  }
+  def rateLimited(responder: Responder, rateLimiter: RateLimiter): Responder =
+    (status) => responder(status) filterNot { _ => rateLimiter(status.getUser) }
+
+  def merged(responders: Responder*): Responder =
+    (status) => responders.foldLeft[Option[StatusUpdate]](None)(_ orElse _(status))
 }
 
 /**

@@ -5,11 +5,6 @@ import com.twitter.util.{Return, Throw, Try}
 import twitter4j._
 
 /**
- * This is a little shim to help us unit test ifFollowing more easily
- */
-trait Action extends (() => Unit)
-
-/**
  * takes care of various social graph-related actions, such as following and unfollowing
  *
  * @param userId the userId for the bot
@@ -111,29 +106,28 @@ class SocialGraph(userId: Long, twitter: Twitter, blacklist: Set[Long]) extends 
   }
 
   /**
-   * Check to see if a user is still following me, and perform an action if so.
-   * If the user is no longer following me, unfollow the user.
+   * Check to see if a user is still following me and if not, unfollow the user.
    *
    * @param target the userId to inspect
    * @param msg a message to log
    * @param args args for that message
    *
-   * @param f the action to perform
+   * @return Return(true) if still follows, Return(false) if not, Throw(_) on exception
    */
-  def ifFollowedBy(target: Long, f: Action, msg: String, args: Any*): Unit = synchronized {
-    tryAndLogResult(msg, args) {
-      log.info(" Making sure user still follows me")
-
+  def checkOrUnfollow(target: Long): Try[Boolean] = synchronized {
+    tryAndLogResult(" Making sure user still follows me") {
       if (isBlacklisted(target)) {
         // otherwise, destroy the mutual follow
         log.info(" Blacklisted, unfollowing")
         unfollow(target)
+        false
       } else if (!isFollowedBy(target)) {
         // otherwise, destroy the mutual follow
         log.info(" No longer following me, unfollowing")
         unfollow(target)
+        false
       } else {
-        f()
+        true
       }
     }
   }

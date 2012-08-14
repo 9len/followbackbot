@@ -55,8 +55,8 @@ class ResponderSpec extends FunSpec with MockitoSugar {
     }
   }
 
-  describe("Responder.compose") {
-    val responder = Responder.compose(
+  describe("Responder.merged") {
+    val responder = Responder.merged(
       Responder.simple {
         case "foo" => Some("foo")
         case _ => None

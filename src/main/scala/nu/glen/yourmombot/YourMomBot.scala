@@ -1,12 +1,19 @@
 package nu.glen.yourmombot
 
-import nu.glen.followbackbot.{FollowBackBot, Responder}
+import nu.glen.followbackbot.{FollowBackBot, RateLimiter, Responder}
 
 object YourMomBot
   extends FollowBackBot(
-    Responder.compose(
-      Responder.logOnly(Responder.simple(YourMomPastTenseResponder)),
-      Responder.simple(YourMomGerrundResponder)
+    Responder.rateLimited(
+      Responder.merged(
+        Responder.logOnly(Responder.simple(YourMomPastTenseResponder)),
+        Responder.simple(YourMomGerrundResponder)
+      ),
+      RateLimiter.merged(
+        RateLimiter.perMinute(1),
+        RateLimiter.perHour(3),
+        RateLimiter.perDay(10)
+      )
     )
   )
   with App

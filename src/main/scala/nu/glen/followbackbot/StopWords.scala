@@ -18,6 +18,7 @@ object StopWords {
   )
 
   val ed = Set(
+    "bed",
     "need",
     "indeed",
     "peed"
