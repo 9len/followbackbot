@@ -9,31 +9,41 @@ object Responder {
    *
    * @param responder the SimpleResponder to convert
    */
-  def simple(responder: SimpleResponder): Responder = {
+  def simple(responder: SimpleResponder): Responder = { status =>
+    // get the untruncated retweet text if status is a retweet
+    val text =
+      if (status.isRetweet)
+        status.getRetweetedStatus.getText
+      else
+        status.getText
+
+    responder(text) map { response =>
+      // add @reply prefix
+      val withReply = "@%s %s".format(status.getUser.getScreenName, response).trim
+
+      // trim to 140 chars, append an elipsis if > 140
+      val trimmed =
+        if (withReply.size > 140)
+          withReply.substring(0, 139).trim + "…"
+        else
+          withReply
+
+      new StatusUpdate(trimmed).inReplyToStatusId(status.getId)
+    }
+  }
+
+  def logOnly(responder: Responder): Responder =
     new Responder with SimpleLogger {
       override def apply(status: Status): Option[StatusUpdate] = {
-        // get the untruncated retweet text if status is a retweet
-        val text =
-          if (status.isRetweet)
-            status.getRetweetedStatus.getText
-          else
-            status.getText
-
-        responder(text) map { response =>
-          // add @reply prefix
-          val withReply = "@%s %s".format(status.getUser.getScreenName, response).trim
-
-          // trim to 140 chars, append an elipsis if > 140
-          val trimmed =
-            if (withReply.size > 140)
-              withReply.substring(0, 139).trim + "…"
-            else
-              withReply
-
-          new StatusUpdate(trimmed).inReplyToStatusId(status.getId)
+        responder.apply(status) flatMap { statusUpdate =>
+          log.info("Would have tweeted: %s", statusUpdate.getStatus)
+          None
         }
       }
     }
+
+  def compose(thisResponder: Responder, thatResponder: Responder): Responder = { status =>
+    thisResponder(status) orElse thatResponder(status)
   }
 }
 
