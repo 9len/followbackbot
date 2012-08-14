@@ -17,7 +17,7 @@ object YourMomGerrundResponder
       "nothing",
       "something",
       "spring",
-      "thing",
+      "thing"
     )
   )
 {
