@@ -5,18 +5,19 @@ import nu.glen.followbackbot.KeywordPrefixResponder
 object YourMomGerrundResponder
   extends KeywordPrefixResponder(
     Set(
+      "anything",
+      "beijing",
       "during",
-      "evening",
-      "thing",
       "effing",
+      "evening",
       "everything",
+      "interesting",
+      "king",
+      "morning",
+      "nothing",
       "something",
       "spring",
-      "nothing",
-      "morning",
-      "anything",
-      "interesting",
-      "king"
+      "thing",
     )
   )
 {
@@ -33,7 +34,14 @@ object YourMomGerrundResponder
   override def process(gerrund: String) = "Your mom's " + gerrund
 }
 
-object YourMomPastTenseResponder extends KeywordPrefixResponder(Set.empty) {
+object YourMomPastTenseResponder
+  extends KeywordPrefixResponder(
+    Set(
+      "peed",
+      "need"
+    )
+  )
+{
   private[this] val Regex = ".*?\\b([a-z\\-A-Z]+[eE][dD])\\\"?\\b(.*)\\\"?".r
 
   /**
