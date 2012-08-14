@@ -21,7 +21,7 @@ object RateLimiter {
     new SimpleRateLimiter(1.minute, maxValue, maxSize)
 
   def merged(limiters: RateLimiter*): RateLimiter =
-    (id) => limiters.foldLeft(true)(_ && _(id))
+    (id) => limiters.foldLeft(false)(_ || _(id))
 }
 
 /**
