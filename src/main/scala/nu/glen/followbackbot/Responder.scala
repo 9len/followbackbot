@@ -1,6 +1,7 @@
 package nu.glen.followbackbot
 
 import twitter4j.{Status, StatusUpdate}
+import util.matching.Regex
 
 object Responder {
   /**
@@ -34,6 +35,8 @@ object Responder {
 
   def logOnly(responder: Responder): Responder =
     new Responder with SimpleLogger {
+      override def name = responder.getClass.getName
+
       override def apply(status: Status): Option[StatusUpdate] = {
         responder.apply(status) flatMap { statusUpdate =>
           log.info("Would have tweeted: %s", statusUpdate.getStatus)
@@ -56,20 +59,58 @@ abstract class KeywordPrefixResponder(stopWords: Set[String])
   extends SimpleResponder
   with SimpleLogger
 {
+  /**
+   * extract the keyword and remaining text from a status text
+   *
+   * @param statusText the text from which to extract
+   */
   def extract(statusText: String): Option[(String, String)]
 
-  def process(keyword: String): String
-
-  def combine(keyword: String, rest: String) = keyword + rest
+  /**
+   * combine the keyword (now vetted against stopwords) with the rest of the
+   * string to form the tweet.
+   *
+   * @param filteredKeyword the keyword, filtered against stop words
+   * @param rest the rest of the sentence to be combined with the keyword
+   */
+  def combine(filteredKeyword: String, rest: String): String
 
   def apply(statusText: String): Option[String] = {
     extract(statusText) flatMap { case (keyword, rest) =>
       if (stopWords.contains(keyword)) {
-        log.info("  Skipping tweet with stopword: %s", keyword)
+        log.info("  Skipping tweet with stop word: %s", keyword)
         None
       } else {
-        Some(combine(process(keyword), rest))
+        Some(combine(keyword, rest))
       }
     }
   }
 }
+
+/**
+ * A KeywordPrefixResponder that uses a regex for extraction
+ */
+abstract class RegexKeywordPrefixResponder(stopWords: Set[String], regex: Regex)
+  extends KeywordPrefixResponder(stopWords)
+{
+  override def extract(statusText: String): Option[(String, String)] = statusText match {
+     case regex(keyword, rest) => Some((keyword.toLowerCase, rest))
+     case _ => None
+  }
+}
+
+/**
+ * A RegexKeywordPrefixResponder which (poorly) matches gerrunds as keywords
+ */
+abstract class GerrundKeywordPrefixResponder
+  extends RegexKeywordPrefixResponder(
+    StopWords.ing,
+    """.*?\b([a-z\-A-Z]+[iI][nN][gG])\b\"?(.*?)\"?""".r)
+
+/**
+ * A RegexKeywordPrefixResponder which (poorly) matches past-tense verbs as keywords
+ */
+abstract class PastTenseKeywordPrefixResponder
+  extends RegexKeywordPrefixResponder(
+    StopWords.ed,
+     """.*?\b([a-z\-A-Z]+[eE][dD])\b\"?(.*?)\"?""".r)

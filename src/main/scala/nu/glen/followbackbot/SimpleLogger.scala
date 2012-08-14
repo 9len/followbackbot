@@ -7,7 +7,9 @@ import com.twitter.util.Try
  * A mix-in providing for a logger named for the class's simple name
  */
 trait SimpleLogger {
-  val log = Logger.get(getClass.getSimpleName)
+  def name = getClass.getSimpleName
+
+  lazy val log = Logger.get(name)
 
   def tryAndLogResult[T](formatter: String, args: Any*)(f: => T): Try[T] = {
     log.info(formatter, args: _*)

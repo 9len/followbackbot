@@ -3,36 +3,30 @@ package nu.glen.yourmombot
 import org.scalatest.FunSpec
 
 class YourMomResponderSpec extends FunSpec {
-  val good = Some("Your mom's hoping this works")
-
+  // most of the unit tests for this are in ResponderSpec, since the only
+  // thing this class does is prefix "Your Mom's"
   describe("YourMomGerrundResponder") {
     it("should extract a simple sentance") {
       val result = YourMomGerrundResponder("I'm hoping this works")
-      assert(result == good)
-    }
-
-    it("should handle mixed case") {
-      val result = YourMomGerrundResponder("I'm HOPING this works")
-      assert(result == good)
-    }
-
-    it("should handle sentence beginning with a gerrand") {
-      val result = YourMomGerrundResponder("hoping this works")
-      assert(result == good)
+      assert(result == Some("Your mom's hoping this works"))
     }
 
     it("should return None for no ing") {
       val result = YourMomGerrundResponder("foobar")
       assert(result == None)
     }
+  }
 
-    it("should handle hyphens") {
-      val result = YourMomGerrundResponder("@foobar It's baby-triggered laziness related. It predates leave by about 2 weeks, but the beard-growing really progressed afterwards.")
-      assert(result == Some("Your mom's beard-growing really progressed afterwards."))
+  // most of the unit tests for this are in ResponderSpec, since the only
+  // thing this class does is prefix "Your Mom's"
+  describe("YourMomPastTenseResponder") {
+    it("should extract a simple sentance") {
+      val result = YourMomPastTenseResponder("I hoped this worked")
+      assert(result == Some("Your mom hoped this worked"))
     }
 
-    it("should handle stopwords") {
-      val result = YourMomGerrundResponder("do not capture me during this sentence.")
+    it("should return None for no ing") {
+      val result = YourMomPastTenseResponder("foobar")
       assert(result == None)
     }
   }
