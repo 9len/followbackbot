@@ -11,14 +11,14 @@ import twitter4j.User
 object RateLimiter {
   val defaultMaxSize = 10000
 
-  def perDay(maxValue: Int, maxSize: Int = defaultMaxSize): RateLimiter =
-    new SimpleRateLimiter(24.hours, maxValue, maxSize)
+  def perDay(maxValue: Int, size: Int = defaultMaxSize): RateLimiter =
+    new SimpleRateLimiter(24.hours, maxValue, size)
 
-  def perHour(maxValue: Int, maxSize: Int = defaultMaxSize): RateLimiter =
-    new SimpleRateLimiter(1.hour, maxValue, maxSize)
+  def perHour(maxValue: Int, size: Int = defaultMaxSize): RateLimiter =
+    new SimpleRateLimiter(1.hour, maxValue, size)
 
-  def perMinute(maxValue: Int, maxSize: Int = defaultMaxSize): RateLimiter =
-    new SimpleRateLimiter(1.minute, maxValue, maxSize)
+  def perMinute(maxValue: Int, size: Int = defaultMaxSize): RateLimiter =
+    new SimpleRateLimiter(1.minute, maxValue, size)
 
   def merged(limiters: RateLimiter*): RateLimiter =
     (id) => limiters.foldLeft(false)(_ || _(id))
@@ -31,16 +31,17 @@ object RateLimiter {
  *
  * @param resolution: the TTL of the cache
  * @param maxValue: the maximum value for the counter before rate limiting
- * @param maxSize: the size of the cache
+ * @param size: the size of the cache
  */
-class SimpleRateLimiter(resolution: Duration, maxValue: Int, maxSize: Int)
+class SimpleRateLimiter(resolution: Duration, maxValue: Int, size: Int)
   extends RateLimiter with SimpleLogger
 {
   override lazy val name = "RateLimiter[%s/%s]".format(maxValue, resolution)
 
   private[this] val cache =
     CacheBuilder.newBuilder.asInstanceOf[CacheBuilder[Long, AtomicInteger]]
-      .maximumSize(maxSize)
+      .initialCapacity(size) // no surprises
+      .maximumSize(size)
       .expireAfterWrite(resolution.inMillis, TimeUnit.MILLISECONDS)
       .build[Long, AtomicInteger]()
       .asMap
