@@ -106,13 +106,13 @@ abstract class BeHaveDoKeywordPrefixResponder extends KeywordPrefixResponder(Set
     uncontractable ++ uncontractable.map { _ + " not"} ++
     withAux ++ others
 
-  val paddedWords = words.map { " " + _ + " " }
+  val paddedWords = words.distinct.sorted.map { " " + _ + " " }
 
   paddedWords.foreach(println(_))
 
   override def extract(statusText: String) = {
     paddedWords.collectFirst {
-      case word if statusText.indexOf(word) > 0 =>
+      case word if statusText.toLowerCase.indexOf(word) > 0 =>
         val index = statusText.indexOf(word)
         (word.trim, statusText.substring(index + word.size - 1))
     }
