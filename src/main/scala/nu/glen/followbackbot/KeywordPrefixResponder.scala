@@ -42,46 +42,73 @@ abstract class KeywordPrefixResponder(stopWords: Set[String])
 abstract class BeHaveDoKeywordPrefixResponder extends KeywordPrefixResponder(Set.empty) {
   val contractable =
     Seq(
-      "can",
       "could",
+      "did",
+      "does",
+      "has",
+      "is",
       "must",
       "should",
+      "was",
       "would"
     )
 
   val uncontractable =
     Seq(
       "could",
-      "may",
-      "might",
-      "must",
+      "did",
+      "does",
+      "has",
+      "is",
       "shall",
       "should",
-      "will",
       "would"
     )
 
-  val specialNots = Seq("cannot", "ought not", "ought not to")
+    val contractableNeedsAux =
+    Seq(
+      "can",
+      "must"
+    )
 
-  val special = Seq("ought to", "likes to", "wants to")
-
-  val modals =
-    contractable ++ contractable.map { _ + "n't" } ++
-    uncontractable ++ uncontractable.map { _ + " not"} ++
-    special ++ specialNots
+  val uncontractableNeedsAux =
+    Seq(
+      "may",
+      "might",
+      "must",
+      "will"
+    )
 
   val others =
-    Seq("is", "was", "can has", "has", "had", "does", "did")
+    Seq(
+      "can has",
+      "cannot",
+      "could've",
+      "likes to",
+      "ought to",
+      "ought not to",
+      "ought not",
+      "shouldn've",
+      "wants to",
+      "would've"
+    )
 
-  val stillOthers =
-    Seq("could've", "would've", "shouldn've")
+  val aux = Seq("be", "have")
+
+  val needsAux =
+    contractableNeedsAux ++ contractableNeedsAux.map { _ + "n't"} ++
+    uncontractableNeedsAux ++ uncontractableNeedsAux.map { _ + " not"}
+
+  val withAux = needsAux flatMap { word => aux.map { word + " " + _} }
 
   val words =
-    others ++ others.map { _ + " not" } ++ others.map { _ + "n't" } ++
-    modals.map { _ + " be"} ++ modals.map { _ + " have"} ++
-    stillOthers
+    contractable ++ contractable.map { _ + "n't" } ++
+    uncontractable ++ uncontractable.map { _ + " not"} ++
+    withAux ++ others
 
   val paddedWords = words.map { _ + " " }
+
+  paddedWords.foreach(println(_))
 
   override def extract(statusText: String) = {
     paddedWords.collectFirst {
