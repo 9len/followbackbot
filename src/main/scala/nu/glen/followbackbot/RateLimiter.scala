@@ -36,7 +36,7 @@ object RateLimiter {
 class SimpleRateLimiter(resolution: Duration, maxValue: Int, size: Int)
   extends RateLimiter with SimpleLogger
 {
-  override lazy val name = "RateLimiter(%s/%s)".format(maxValue, resolution).replaceAll(".", "_")
+  override lazy val name = "RateLimiter(%s/%s)".format(maxValue, resolution).replaceAll("\\.", "_")
 
   private[this] val cache =
     CacheBuilder.newBuilder.asInstanceOf[CacheBuilder[Long, AtomicInteger]]
