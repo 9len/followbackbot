@@ -106,7 +106,7 @@ abstract class BeHaveDoKeywordPrefixResponder extends KeywordPrefixResponder(Set
     uncontractable ++ uncontractable.map { _ + " not"} ++
     withAux ++ others
 
-  val paddedWords = words.map { _ + " " }
+  val paddedWords = words.map { " " + _ + " " }
 
   paddedWords.foreach(println(_))
 
