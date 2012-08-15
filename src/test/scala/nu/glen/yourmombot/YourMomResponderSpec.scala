@@ -25,7 +25,7 @@ class YourMomResponderSpec extends FunSpec {
       assert(result == Some("Your mom hoped this worked"))
     }
 
-    it("should return None for no ing") {
+    it("should return None for no ed") {
       val result = YourMomPastTenseResponder("foobar")
       assert(result == None)
     }

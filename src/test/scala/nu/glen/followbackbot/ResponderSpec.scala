@@ -169,7 +169,7 @@ class ResponderSpec extends FunSpec with MockitoSugar {
     }
 
     it("should handle stopwords") {
-      val result = responder("do not capture me during this sentence.")
+      val result = responder("indeed!")
       assert(result == None)
     }
   }

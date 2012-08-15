@@ -106,7 +106,7 @@ abstract class RegexKeywordPrefixResponder(stopWords: Set[String], regex: Regex)
  */
 abstract class GerrundKeywordPrefixResponder
   extends RegexKeywordPrefixResponder(
-    StopWords.ing,
+    Ing.stopWords,
     """.*?\b([a-z\-A-Z]+[iI][nN][gG])\b\"?(.*?)\"?""".r)
 
 /**
@@ -114,5 +114,5 @@ abstract class GerrundKeywordPrefixResponder
  */
 abstract class PastTenseKeywordPrefixResponder
   extends RegexKeywordPrefixResponder(
-    StopWords.ed,
+    Ed.stopWords,
      """.*?\b([a-z\-A-Z]+[eE][dD])\b\"?(.*?)\"?""".r)
