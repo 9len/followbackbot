@@ -7,7 +7,7 @@ object YourMomBot
     Responder.ignoreProtectedUsers(
       Responder.rateLimited(
         Responder.merged(
-          // for testing
+          // experimental, so just log what would have happened
           Responder.logOnly(
             Responder.preferLongestResponse(
               Responder.simple(new YourMomBeHaveDoResponder),
