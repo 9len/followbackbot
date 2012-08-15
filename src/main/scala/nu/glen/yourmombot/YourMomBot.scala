@@ -10,8 +10,7 @@ object YourMomBot
         Responder.simple(YourMomGerrundResponder)
       ),
       RateLimiter.merged(
-        RateLimiter.perMinute(1),
-        RateLimiter.perHour(3),
+        RateLimiter.perHour(2),
         RateLimiter.perDay(10)
       )
     )
