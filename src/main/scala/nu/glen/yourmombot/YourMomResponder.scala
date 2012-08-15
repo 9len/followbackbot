@@ -1,7 +1,7 @@
 package nu.glen.yourmombot
 
 import nu.glen.followbackbot.{
-  BeHaveKeywordPrefixResponder,
+  BeHaveDoKeywordPrefixResponder,
   GerrundKeywordPrefixResponder,
   PastTenseKeywordPrefixResponder
 }
