@@ -30,10 +30,16 @@ object Responder {
         else
           withReply
 
-      (new StatusUpdate(trimmed)).inReplyToStatusId(status.getId)
+      new StatusUpdate(trimmed)
     }
   }
 
+  /**
+   * invoke the Responder, log result (if any), but always return None
+   *
+   * @param responder the Responder to convert
+   * @return the new Responder
+   */
   def logOnly(responder: Responder): Responder =
     new Responder with SimpleLogger {
       override def name = responder.getClass.getName
@@ -46,9 +52,52 @@ object Responder {
       }
     }
 
+  /**
+   * rate limit responses to individual users
+   *
+   * @param responder the Responder to rate limit
+   * @param rateLimiter the RateLimiter to use
+   * @return the new Responder
+   */
   def rateLimited(responder: Responder, rateLimiter: RateLimiter): Responder =
     (status) => responder(status) filterNot { _ => rateLimiter(status.getUser) }
 
+  /**
+   * merge Responders into a single Responder, preferring first response
+   * @param responder the Responders to merge
+   * @return the new Responder
+   */
   def merged(responders: Responder*): Responder =
-    (status) => responders.foldLeft[Option[StatusUpdate]](None)(_ orElse _(status))
+    mergedWithPreference(responders: _*) { (a, _) => a }
+
+  /**
+   * merge Responders into a single Responder, preferring longest response
+   * @param responder the Responders to merge
+   * @return the new Responder
+   */
+  def preferLongestResponse(responders: Responder*): Responder =
+    mergedWithPreference(responders: _*) { (a, b) =>
+      if (a.getStatus.length >= b.getStatus.length) a else b
+    }
+
+  /**
+   * merge Responders into a single Responder
+   * @param responder the Responders to merge
+   * @param choose a function to choose between two StatusUpdates
+   * @return the new Responder
+   */
+  def mergedWithPreference(
+    responders: Responder*
+  )(
+    choose: (StatusUpdate, StatusUpdate) => StatusUpdate
+  ): Responder = { status =>
+    responders.foldLeft[Option[StatusUpdate]](None) { (accum, responder) =>
+      (accum, responder(status)) match {
+        case (Some(a), Some(b)) => Some(choose(a, b))
+        case (Some(a), None) => Some(a)
+        case (None, Some(b)) => Some(b)
+        case (None, None) => None
+      }
+    }
+  }
 }

@@ -98,7 +98,7 @@ class ListenerSpec extends FunSpec with MockitoSugar {
       listener.onStatus(status)
       verify(responder)(status)
       verify(socialGraph).checkOrUnfollow(target.getId)
-      verify(twitter).updateStatus(statusUpdate)
+      verify(twitter).updateStatus(statusUpdate.inReplyToStatusId(status.getId))
     }
   }
 

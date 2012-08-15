@@ -35,12 +35,11 @@ class YourMomResponderSpec extends FunSpec {
     }
   }
 
-  describe("YourMomBeHaveResponder") {
+  describe("YourMomBeHaveDoResponder") {
     val responder = new YourMomBeHaveDoResponder
 
     it("should extract") {
       val result = responder("I didn't much care for that")
-      println(result)
       assert(result == Some("Your mom didn't much care for that"))
     }
 

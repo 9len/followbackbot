@@ -55,7 +55,7 @@ class Listener(
             // only send the reply if the user still follows us
             if (socialGraph.checkOrUnfollow(status.getUser.getId).getOrElse(false)) {
               log.info(" Tweeting: %s", statusUpdate.getStatus)
-              twitter.updateStatus(statusUpdate)
+              twitter.updateStatus(statusUpdate.inReplyToStatusId(status.getId))
             }
           }
 

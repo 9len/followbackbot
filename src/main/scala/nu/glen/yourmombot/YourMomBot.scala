@@ -12,7 +12,7 @@ object YourMomBot
       ),
       RateLimiter.merged(
         RateLimiter.perHour(2),
-        RateLimiter.perDay(10)
+        RateLimiter.perDay(8)
       )
     )
   )

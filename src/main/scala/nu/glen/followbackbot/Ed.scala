@@ -4,6 +4,10 @@ object Ed {
   val stopWords = Set(
     // custom words
     "bored",
+    "need",
+    "feed",
+    "speed",
+    "bleed",
 
     // dictionary words
     "abaissed",

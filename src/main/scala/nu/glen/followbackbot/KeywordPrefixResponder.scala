@@ -39,6 +39,9 @@ abstract class KeywordPrefixResponder(stopWords: Set[String])
   }
 }
 
+/**
+ * Attempts to match various "to be", "to have", and "to do" verb combinations
+ */
 abstract class BeHaveDoKeywordPrefixResponder extends KeywordPrefixResponder(Set.empty) {
   val contractable =
     Seq(
@@ -110,13 +113,26 @@ abstract class BeHaveDoKeywordPrefixResponder extends KeywordPrefixResponder(Set
 
   paddedWords.foreach(println(_))
 
+  /**
+   * will try every extraction, but prefer the longest one
+   */
   override def extract(statusText: String) = {
-    paddedWords.collectFirst {
-      case word if statusText.toLowerCase.indexOf(word) > 0 =>
-        val index = statusText.indexOf(word)
-        (word.trim, statusText.substring(index + word.size - 1))
+    val earliest = paddedWords flatMap { word =>
+      val index = statusText.indexOf(word)
+      if (index > 0)
+        Some((index, word.trim))
+      else
+        None
+    } sortWith { case ((thisIndex, _), (thatIndex, _)) =>
+      thisIndex < thatIndex
+    } headOption
+
+    earliest map { case (index, word) =>
+      (word, statusText.substring(index + word.size + 1))
     }
   }
+
+
 }
 
 /**
