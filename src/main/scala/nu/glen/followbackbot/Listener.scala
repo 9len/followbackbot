@@ -23,13 +23,17 @@ class Listener(
   extends UserStreamListener
   with SimpleLogger
 {
+  protected[this] val retweetRegex =
+    (""".*?\brt @""" + screenName.toLowerCase + ":.*").r
+
   protected[this] def isMe(user: User) = user.getId == userId
 
   /**
    * simple check should catch both old- and new-school RTs
    */
   protected[this] def isMyOwnRetweet(status: Status) =
-    status.getText.toLowerCase.startsWith("rt @" + screenName.toLowerCase + ":")
+    retweetRegex.findFirstIn(status.getText.toLowerCase).isDefined
+    //status.getText.toLowerCase.startsWith("rt @" + screenName.toLowerCase + ":")
 
   /**
    * reply to the status iff:
