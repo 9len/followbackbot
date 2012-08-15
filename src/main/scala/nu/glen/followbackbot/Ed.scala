@@ -2,6 +2,9 @@ package nu.glen.followbackbot
 
 object Ed {
   val stopWords = Set(
+    // custom words
+    "bored",
+
     // dictionary words
     "abaissed",
     "abatised",
