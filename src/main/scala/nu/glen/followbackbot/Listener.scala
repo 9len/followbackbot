@@ -33,7 +33,6 @@ class Listener(
    */
   protected[this] def isMyOwnRetweet(status: Status) =
     retweetRegex.findFirstIn(status.getText.toLowerCase).isDefined
-    //status.getText.toLowerCase.startsWith("rt @" + screenName.toLowerCase + ":")
 
   /**
    * reply to the status iff:

@@ -53,6 +53,26 @@ object Responder {
     }
 
   /**
+   * Avoid leaking private tweets via replies that might quote the tweet
+   *
+   * @param responder the Responder to convert
+   * @return the new Responder
+   */
+  def ignoreProtectedUsers(responder: Responder): Responder =
+    new Responder with SimpleLogger {
+      override def name = responder.getClass.getName
+
+      override def apply(status: Status): Option[StatusUpdate] = {
+        if (status.getUser.isProtected) {
+          log.info(" Ignoring status from protected user: %s", status.getUser.getScreenName)
+          None
+        } else {
+          responder(status)
+        }
+      }
+    }
+
+  /**
    * rate limit responses to individual users
    *
    * @param responder the Responder to rate limit

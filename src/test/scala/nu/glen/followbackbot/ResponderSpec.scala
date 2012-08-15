@@ -45,6 +45,9 @@ class ResponderSpec extends FunSpec with MockitoSugar {
       when(status.isRetweet).thenReturn(true)
       when(status.getRetweetedStatus).thenReturn(rtStatus)
       assert(someResponder(status) == expected)
+      // cleanup
+      when(status.isRetweet).thenReturn(false)
+      when(status.getRetweetedStatus).thenReturn(null)
     }
   }
 
@@ -52,6 +55,23 @@ class ResponderSpec extends FunSpec with MockitoSugar {
     it("should not return when underlying responder returns") {
       val responder = Responder.logOnly(someResponder)
       assert(responder(status) == None)
+    }
+  }
+
+  describe("Responder.ignoreProtectedUsers") {
+    val responder = Responder.ignoreProtectedUsers(someResponder)
+
+    it ("should ignore protected users") {
+      when(user.isProtected).thenReturn(true)
+      assert(responder(status) == None)
+    }
+
+    it("should allow unprotected users") {
+      val expected = Some(new StatusUpdate("@bar foo"))
+      when(status.getText).thenReturn("foo")
+      when(user.isProtected).thenReturn(false)
+      println(responder(status))
+      assert(responder(status) == expected)
     }
   }
 
