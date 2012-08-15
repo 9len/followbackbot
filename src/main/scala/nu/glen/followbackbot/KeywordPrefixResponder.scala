@@ -40,9 +40,39 @@ abstract class KeywordPrefixResponder(stopWords: Set[String])
 }
 
 /**
+ * for a given list of words, will try to find each in the status text, and use as
+ * the keyword prefix. If more than once match, will prefer the one earliest in the
+ * status text.
+ */
+abstract class IndexKeywordPrefixResponder extends KeywordPrefixResponder(Set.empty) {
+  def words: Seq[String]
+
+  lazy val paddedWords = words.distinct.sorted.map { " " + _ + " " }
+
+  /**
+   * will try every extraction, but prefer the longest one
+   */
+  override def extract(statusText: String) = {
+    val earliest = paddedWords flatMap { word =>
+      val index = statusText.indexOf(word)
+      if (index > 0)
+        Some((index, word.trim))
+      else
+        None
+    } sortWith { case ((thisIndex, _), (thatIndex, _)) =>
+      thisIndex < thatIndex
+    } headOption
+
+    earliest map { case (index, word) =>
+      (word, statusText.substring(index + word.size + 1))
+    }
+  }
+}
+
+/**
  * Attempts to match various "to be", "to have", and "to do" verb combinations
  */
-abstract class BeHaveDoKeywordPrefixResponder extends KeywordPrefixResponder(Set.empty) {
+abstract class BeHaveDoKeywordPrefixResponder extends IndexKeywordPrefixResponder {
   val contractable =
     Seq(
       "could",
@@ -104,35 +134,10 @@ abstract class BeHaveDoKeywordPrefixResponder extends KeywordPrefixResponder(Set
 
   val withAux = needsAux flatMap { word => aux.map { word + " " + _} }
 
-  val words =
+  override lazy val words =
     contractable ++ contractable.map { _ + "n't" } ++
     uncontractable ++ uncontractable.map { _ + " not"} ++
     withAux ++ others
-
-  val paddedWords = words.distinct.sorted.map { " " + _ + " " }
-
-  paddedWords.foreach(println(_))
-
-  /**
-   * will try every extraction, but prefer the longest one
-   */
-  override def extract(statusText: String) = {
-    val earliest = paddedWords flatMap { word =>
-      val index = statusText.indexOf(word)
-      if (index > 0)
-        Some((index, word.trim))
-      else
-        None
-    } sortWith { case ((thisIndex, _), (thatIndex, _)) =>
-      thisIndex < thatIndex
-    } headOption
-
-    earliest map { case (index, word) =>
-      (word, statusText.substring(index + word.size + 1))
-    }
-  }
-
-
 }
 
 /**

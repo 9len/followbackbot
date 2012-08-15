@@ -6,17 +6,10 @@ object YourMomBot
   extends FollowBackBot(
     Responder.ignoreProtectedUsers(
       Responder.rateLimited(
-        Responder.merged(
-          // experimental, so just log what would have happened
-          Responder.logOnly(
-            Responder.preferLongestResponse(
-              Responder.simple(new YourMomBeHaveDoResponder),
-              Responder.simple(new YourMomGerrundResponder),
-              Responder.simple(new YourMomPastTenseResponder)
-            )
-          ),
-          Responder.simple(new YourMomPastTenseResponder),
-          Responder.simple(new YourMomGerrundResponder)
+        Responder.preferLongestResponse(
+          Responder.simple(new YourMomBeHaveDoResponder),
+          Responder.simple(new YourMomGerrundResponder),
+          Responder.simple(new YourMomPastTenseResponder)
         ),
         RateLimiter.merged(
           RateLimiter.perHour(2),
