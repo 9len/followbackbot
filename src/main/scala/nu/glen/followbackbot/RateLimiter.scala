@@ -11,17 +11,15 @@ import twitter4j.User
 object RateLimiter {
   val defaultMaxSize = 10000
 
-  def perDay(maxValue: Int, size: Int = defaultMaxSize): RateLimiter =
-    new SimpleRateLimiter(24.hours, maxValue, size)
-
-  def perHour(maxValue: Int, size: Int = defaultMaxSize): RateLimiter =
-    new SimpleRateLimiter(1.hour, maxValue, size)
-
-  def perMinute(maxValue: Int, size: Int = defaultMaxSize): RateLimiter =
-    new SimpleRateLimiter(1.minute, maxValue, size)
+  def allow(maxValue: Int): Allow = new Allow(maxValue)
 
   def merged(limiters: RateLimiter*): RateLimiter =
     (id) => limiters.foldLeft(false)(_ || _(id))
+
+  class Allow(maxValue: Int) {
+    def per(resolution: Duration): RateLimiter =
+      new SimpleRateLimiter(resolution, maxValue, defaultMaxSize)
+  }
 }
 
 /**
