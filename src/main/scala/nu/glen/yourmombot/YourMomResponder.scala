@@ -1,13 +1,19 @@
 package nu.glen.yourmombot
 
-import nu.glen.followbackbot.{GerrundKeywordPrefixResponder, PastTenseKeywordPrefixResponder}
+import nu.glen.followbackbot.{
+  BeHaveKeywordPrefixResponder,
+  GerrundKeywordPrefixResponder,
+  PastTenseKeywordPrefixResponder
+}
 
-object YourMomGerrundResponder extends GerrundKeywordPrefixResponder {
-  override def name = "YourMomGerrundResponder"
+class YourMomGerrundResponder extends GerrundKeywordPrefixResponder {
   override def combine(gerrund: String, rest: String) = "Your mom's %s%s".format(gerrund, rest)
 }
 
-object YourMomPastTenseResponder extends PastTenseKeywordPrefixResponder {
-  override def name = "YourMomPastTenseResponder"
+class YourMomPastTenseResponder extends PastTenseKeywordPrefixResponder {
+  override def combine(verb: String, rest: String) = "Your mom %s%s".format(verb, rest)
+}
+
+class YourMomBeHaveDoResponder extends BeHaveDoKeywordPrefixResponder {
   override def combine(verb: String, rest: String) = "Your mom %s%s".format(verb, rest)
 }
