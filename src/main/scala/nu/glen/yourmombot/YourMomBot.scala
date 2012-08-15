@@ -6,7 +6,14 @@ object YourMomBot
   extends FollowBackBot(
     Responder.rateLimited(
       Responder.merged(
-        Responder.logOnly(Responder.simple(new YourMomBeHaveDoResponder)),
+        // for testing
+        Responder.logOnly(
+          Responder.preferLongestResponse(
+            Responder.simple(new YourMomBeHaveDoResponder),
+            Responder.simple(new YourMomGerrundResponder),
+            Responder.simple(new YourMomPastTenseResponder)
+          )
+        ),
         Responder.simple(new YourMomPastTenseResponder),
         Responder.simple(new YourMomGerrundResponder)
       ),
