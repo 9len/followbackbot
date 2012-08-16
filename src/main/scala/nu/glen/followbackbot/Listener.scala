@@ -24,7 +24,7 @@ class Listener(
   with SimpleLogger
 {
   protected[this] val retweetRegex =
-    (""".*?\brt @""" + screenName.toLowerCase + ":.*").r
+    (""".*?\brt @""" + screenName.toLowerCase + "[: ].*").r
 
   protected[this] def isMe(user: User) = user.getId == userId
 

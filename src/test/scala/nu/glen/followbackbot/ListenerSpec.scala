@@ -48,11 +48,29 @@ class ListenerSpec extends FunSpec with MockitoSugar {
       verify(socialGraph, never).checkOrUnfollow(anyLong)
     }
 
+    it("should ignore by-hand retweet of my status") {
+      val status = mock[Status]
+      val target = NextTarget()
+      when(status.getUser).thenReturn(target)
+      when(status.getText).thenReturn("RT @foo foobarbaz")
+      listener.onStatus(status)
+      verify(socialGraph, never).checkOrUnfollow(anyLong)
+    }
+
     it("should ignore annotated retweet of my status") {
       val status = mock[Status]
       val target = NextTarget()
       when(status.getUser).thenReturn(target)
       when(status.getText).thenReturn("eat the poop! RT @foo: foobarbaz")
+      listener.onStatus(status)
+      verify(socialGraph, never).checkOrUnfollow(anyLong)
+    }
+
+    it("should ignore annotated by-hand retweet of my status") {
+      val status = mock[Status]
+      val target = NextTarget()
+      when(status.getUser).thenReturn(target)
+      when(status.getText).thenReturn("eat the poop! RT @foo foobarbaz")
       listener.onStatus(status)
       verify(socialGraph, never).checkOrUnfollow(anyLong)
     }

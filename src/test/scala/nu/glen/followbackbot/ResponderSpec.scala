@@ -70,7 +70,6 @@ class ResponderSpec extends FunSpec with MockitoSugar {
       val expected = Some(new StatusUpdate("@bar foo"))
       when(status.getText).thenReturn("foo")
       when(user.isProtected).thenReturn(false)
-      println(responder(status))
       assert(responder(status) == expected)
     }
   }
