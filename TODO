@@ -1,0 +1,5 @@
+[ ] more nuanced rate limits (count # of tweets of people we've responded to)
+[ ] @mention filter (dont' respont to @mentions of yourself)
+[ ] how to deal with hash tags?
+[ ] wed-nes-day
+[ ] how to deal with punctuation?
