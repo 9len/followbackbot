@@ -14,7 +14,7 @@ object YourMomBot
         ),
         RateLimiter.merged(
           RateLimiter.allow(2).per(1.hour),
-          RateLimiter.allow(8).per(24.hours)
+          RateLimiter.allow(5).per(24.hours)
         )
       )
     )
