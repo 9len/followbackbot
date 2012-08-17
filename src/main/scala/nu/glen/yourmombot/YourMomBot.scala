@@ -13,6 +13,7 @@ object YourMomBot
           Responder.simple(new YourMomPastTenseResponder)
         ),
         RateLimiter.merged(
+          RateLimiter.allow(1).per(5.minutes),
           RateLimiter.allow(2).per(1.hour),
           RateLimiter.allow(5).per(24.hours)
         )

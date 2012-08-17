@@ -4,6 +4,10 @@ object Ing {
   val stopWords = Set(
     // custom words
     "beijing",
+    "bring",
+    "ding",
+    "ping",
+    "sting",
 
     // dictionary words
     "abutting",
