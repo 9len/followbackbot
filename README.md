@@ -20,7 +20,7 @@ An example is provided, the source code for the [@YourMomBot](http://twitter.com
        * extremely naive for now. just extracts tweets with words ending in "ing"
        */
       def apply(status: String): Option[String] = status match {
-        case Regex(gerrand, rest) => Some("Your mom's %s%s".format(gerrand.toLowerCase, rest))
+        case Regex(gerund, rest) => Some("Your mom's %s%s".format(gerund.toLowerCase, rest))
         case _ => None
       }
     }

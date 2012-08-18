@@ -88,8 +88,8 @@ class ResponderSpec extends FunSpec with MockitoSugar {
     }
   }
 
-  describe("GerrundKeywordPrefixResponder") {
-    val responder = new GerrundKeywordPrefixResponder {
+  describe("GerundKeywordPrefixResponder") {
+    val responder = new GerundKeywordPrefixResponder {
       override def combine(keyword: String, rest: String) = "(%s,%s)".format(keyword, rest)
     }
 

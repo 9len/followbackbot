@@ -61,6 +61,13 @@ abstract class KeywordPrefixResponder(stopWords: Set[String])
   extends SimpleResponder
   with SimpleLogger
 {
+
+  val sentenceBreak = "[.!?]+\\W".r
+
+  def firstSentence(text: String) = {
+    sentenceBreak.split(text).head
+  }
+
   /**
    * extract the keyword and remaining text from a status text
    *
@@ -102,9 +109,9 @@ abstract class RegexKeywordPrefixResponder(stopWords: Set[String], regex: Regex)
 }
 
 /**
- * A RegexKeywordPrefixResponder which (poorly) matches gerrunds as keywords
+ * A RegexKeywordPrefixResponder which (poorly) matches gerunds as keywords
  */
-abstract class GerrundKeywordPrefixResponder
+abstract class GerundKeywordPrefixResponder
   extends RegexKeywordPrefixResponder(
     StopWords.ing,
     """.*?\b([a-z\-A-Z]+[iI][nN][gG])\b\"?(.*?)\"?""".r)

@@ -7,7 +7,7 @@ object YourMomBot
     Responder.rateLimited(
       Responder.merged(
         Responder.logOnly(Responder.simple(YourMomPastTenseResponder)),
-        Responder.simple(YourMomGerrundResponder)
+        Responder.simple(YourMomGerundResponder)
       ),
       RateLimiter.merged(
         RateLimiter.perMinute(1),
