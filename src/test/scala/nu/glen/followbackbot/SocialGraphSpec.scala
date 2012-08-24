@@ -67,7 +67,8 @@ class SocialGraphSpec extends FunSpec with MockitoSugar {
       val user = mkUser(false, false)
       when(twitter.showUser(6)).thenReturn(user)
 
-      socialGraph.reciprocate()
+      // TODO: test false for each arg
+      socialGraph.reciprocate(true, true)
 
       verify(twitter).getFollowersIDs(CursorSupport.START)
       verify(twitter).getFriendsIDs(CursorSupport.START)
@@ -225,22 +226,24 @@ class SocialGraphSpec extends FunSpec with MockitoSugar {
     }
   }
 
+  // TODO: test API throw
   describe("SocialGraph.followers") {
     it("should return all followers, except blacklist") {
       when(twitter.getFollowersIDs(CursorSupport.START)).thenReturn(ids1)
       when(twitter.getFollowersIDs(4)).thenReturn(ids2)
-      assert(socialGraph.followers == Set(1L, 2L, 3L, 4L, 5L, 6L))
+      assert(socialGraph.followers == Return(Set(1L, 2L, 3L, 4L, 5L, 6L)))
       // twice because of the reciprocate test
       verify(twitter, times(2)).getFollowersIDs(CursorSupport.START)
       verify(twitter).getFollowersIDs(4)
     }
   }
 
+  // TODO: test API throw
   describe("SocialGraph.following") {
     it("should return all following") {
       when(twitter.getFriendsIDs(CursorSupport.START)).thenReturn(ids1)
       when(twitter.getFriendsIDs(4)).thenReturn(ids2)
-      assert(socialGraph.following == Set(1L, 2L, 3L, 4L, 5L, 6L, blacklisted))
+      assert(socialGraph.following == Return(Set(1L, 2L, 3L, 4L, 5L, 6L, blacklisted)))
       // twice because of the reciprocate test
       verify(twitter, times(2)).getFriendsIDs(CursorSupport.START)
       verify(twitter).getFriendsIDs(4)

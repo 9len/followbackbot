@@ -13,14 +13,15 @@ class RateLimiterSpec extends FunSpec with MockitoSugar {
 
   val size = 10
 
-  describe("SimpleRateLimiter") {
+  describe("ExpiringCountersRateLimiter") {
+    // TODO: explicit tests for ExpiringCounters, use mocks for ExpiringCountersRateLimiter
     it("returns false if not over limit") {
-      val limiter = new SimpleRateLimiter(100.millis, 5, size)
+      val limiter = new ExpiringCountersRateLimiter(ExpiringCounters(100.millis, size), 5)
       assert(!limiter(user))
     }
 
     it("returns true if over limit") {
-      val limiter = new SimpleRateLimiter(100.millis, 5, size)
+      val limiter = new ExpiringCountersRateLimiter(ExpiringCounters(100.millis, size), 5)
       assert(!limiter(user))
       assert(!limiter(user))
       assert(!limiter(user))
@@ -30,7 +31,7 @@ class RateLimiterSpec extends FunSpec with MockitoSugar {
     }
 
     it("resets after time limit") {
-      val limiter = new SimpleRateLimiter(100.millis, 1, size)
+      val limiter = new ExpiringCountersRateLimiter(ExpiringCounters(100.millis, size), 1)
       assert(!limiter(user))
       assert(limiter(user))
       Thread.sleep(100)

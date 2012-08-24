@@ -13,23 +13,32 @@ import twitter4j._
  */
 class SocialGraph(userId: Long, twitter: Twitter, blacklist: Set[Long]) extends SimpleLogger {
   /**
-   * Ensure that everyone following me is followed by me, unfollow anyone who no loner follows me
+   * Ensure that everyone following me is followed by me, unfollow anyone who no longer follows me
+   *
+   * @param followBack whether or not to follow new followers back
+   * @param unfollowBack whether or not to unfollow no-longer-followers back
+   *
    */
-  def reciprocate(): Unit = synchronized {
-    val allFollowers = followers()
-    val allFollowing = following()
+  def reciprocate(followBack: Boolean, unfollowBack: Boolean): Unit = synchronized {
+    for {
+      allFollowers <- followers()
+      allFollowing <- following()
+    } {
+      log.debug("Followers: %s", allFollowers)
+      log.debug("Following: %s", allFollowing)
 
-    log.debug("Followers: %s", allFollowers)
-    log.debug("Following: %s", allFollowing)
+      if (followBack) {
+        val toFollow = allFollowers -- allFollowing
+        log.info("To Follow: %s", toFollow)
+        withUserIds(toFollow)(follow(_, None, false))
+      }
 
-    val toFollow = allFollowers -- allFollowing
-    val toUnfollow = allFollowing -- allFollowers
-
-    log.info("To Follow: %s", toFollow)
-    withUserIds(toFollow)(follow(_, None, false))
-
-    log.info("To Unfollow: %s", toUnfollow)
-    withUserIds(toUnfollow)(unfollow(_))
+      if (unfollowBack) {
+        val toUnfollow = allFollowing -- allFollowers
+        log.info("To Unfollow: %s", toUnfollow)
+        withUserIds(toUnfollow)(unfollow(_))
+      }
+    }
   }
 
   /**
@@ -135,12 +144,12 @@ class SocialGraph(userId: Long, twitter: Twitter, blacklist: Set[Long]) extends 
   /**
    * Get the full Set of users who follow me
    */
-  def followers(): Set[Long] = getAllIds(twitter.getFollowersIDs) -- blacklist
+  def followers(): Try[Set[Long]] = getAllIds(twitter.getFollowersIDs) map { _ -- blacklist }
 
   /**
    * Get the full Set of users who I follow
    */
-  def following(): Set[Long] = getAllIds(twitter.getFriendsIDs)
+  def following(): Try[Set[Long]] = getAllIds(twitter.getFriendsIDs)
 
   /**
    * helper method for safetly operating over a list of userIds
@@ -163,7 +172,7 @@ class SocialGraph(userId: Long, twitter: Twitter, blacklist: Set[Long]) extends 
    *
    * @param f the cursor method
    */
-  protected[this] def getAllIds(f: Long => IDs): Set[Long] = {
+  protected[this] def getAllIds(f: Long => IDs): Try[Set[Long]] = {
     @tailrec
     def dispatch(cursor: Long, accum: Set[Long]): Try[Set[Long]] = {
       // we use an explicit match here rather than a flatMap so that
@@ -182,6 +191,6 @@ class SocialGraph(userId: Long, twitter: Twitter, blacklist: Set[Long]) extends 
 
     dispatch(CursorSupport.START, Set.empty) onFailure { case t =>
       log.info(t, "Couldn't get follows: %s", t.getMessage)
-    } getOrElse(Set.empty)
+    }
   }
 }

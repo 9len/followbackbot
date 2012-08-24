@@ -69,7 +69,8 @@ class FollowBackBot(
 
   def startReciprocation() {
     timer.schedule(5.seconds.fromNow, 10.minutes) {
-      socialGraph.reciprocate()
+      // don't unfollow back; the Listener will unfollow if necessary instead of replying
+      socialGraph.reciprocate(followBack = true, unfollowBack = false)
     }
   }
 

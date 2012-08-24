@@ -13,13 +13,42 @@ object RateLimiter {
 
   def allow(maxValue: Int): Allow = new Allow(maxValue)
 
-  def merged(limiters: RateLimiter*): RateLimiter =
+  def any(limiters: RateLimiter*): RateLimiter =
     (id) => limiters.foldLeft(false)(_ || _(id))
+
+  def all(limiters: RateLimiter*): RateLimiter =
+    (id) => limiters.foldLeft(false)(_ && _(id))
 
   class Allow(maxValue: Int) {
     def per(resolution: Duration): RateLimiter =
-      new SimpleRateLimiter(resolution, maxValue, defaultMaxSize)
+      new ExpiringCountersRateLimiter(ExpiringCounters(resolution, defaultMaxSize), maxValue)
   }
+}
+
+/**
+ * maintains a map of Ints with a TTL
+ *
+ * @param ttl the expiration time for a counter
+ * @param size the size of the map. if map grows too large, older values are evicted
+ */
+case class ExpiringCounters(ttl: Duration, size: Int) {
+  private[this] val cache =
+    CacheBuilder.newBuilder.asInstanceOf[CacheBuilder[Long, AtomicInteger]]
+      .initialCapacity(size) // no surprises
+      .maximumSize(size)
+      .expireAfterWrite(ttl.inMillis, TimeUnit.MILLISECONDS)
+      .build[Long, AtomicInteger]()
+      .asMap
+      .asScala
+
+  protected[this] def get(id: Long): AtomicInteger =
+    cache.getOrElseUpdate(id, new AtomicInteger(0))
+
+  def incrementAndGet(id: Long): Int =
+    get(id).incrementAndGet()
+
+  def compareAndSet(id: Long, expected: Int, updated: Int): Boolean =
+    get(id).compareAndSet(expected, updated)
 }
 
 /**
@@ -27,26 +56,18 @@ object RateLimiter {
  * If the count is incremented above the max value, the user is considered
  * rate limited, until the value expires out of cache.
  *
- * @param resolution: the TTL of the cache
- * @param maxValue: the maximum value for the counter before rate limiting
- * @param size: the size of the cache
+ * @param counters the Counters class, for book keeping
+ * @param maxValue the maximum value for a counter before rate limiting
  */
-class SimpleRateLimiter(resolution: Duration, maxValue: Int, size: Int)
+class ExpiringCountersRateLimiter(counters: ExpiringCounters, maxValue: Int)
   extends RateLimiter with SimpleLogger
 {
-  override lazy val name = "RateLimiter(%s/%s)".format(maxValue, resolution).replaceAll("\\.", "_")
-
-  private[this] val cache =
-    CacheBuilder.newBuilder.asInstanceOf[CacheBuilder[Long, AtomicInteger]]
-      .initialCapacity(size) // no surprises
-      .maximumSize(size)
-      .expireAfterWrite(resolution.inMillis, TimeUnit.MILLISECONDS)
-      .build[Long, AtomicInteger]()
-      .asMap
-      .asScala
+  override lazy val name = "RateLimiter(%s/%s)".format(
+    maxValue, counters.ttl
+  ).replaceAll("\\.", "_")
 
   override def apply(user: User): Boolean = {
-    val value = cache.getOrElseUpdate(user.getId, new AtomicInteger(0)).incrementAndGet()
+    val value = counters.incrementAndGet(user.getId)
     val limited = value > maxValue
     if (limited) log.info("rate limited %s", user.getScreenName)
     limited
