@@ -4,7 +4,6 @@ import com.twitter.logging.Logger
 import com.twitter.conversions.time._
 import com.twitter.util.{JavaTimer, Timer}
 import twitter4j._
-import twitter4j.auth.AccessToken
 import twitter4j.conf.ConfigurationBuilder
 
 case class Credentials(
