@@ -20,8 +20,8 @@ libraryDependencies ++= Seq(
   "com.google.guava"         % "guava"            % "13.0",
   "com.twitter"              % "util-core"        % "5.3.6",
   "com.twitter"              % "util-logging"     % "5.3.6",
-  "org.twitter4j"            % "twitter4j-core"   % "3.0.3",
-  "org.twitter4j"            % "twitter4j-stream" % "3.0.3",
+  "org.twitter4j"            % "twitter4j-core"   % "3.0.5",
+  "org.twitter4j"            % "twitter4j-stream" % "3.0.5",
   "org.scalatest"            %% "scalatest"       % "1.8"   % "test",
   "org.mockito"              % "mockito-core"     % "1.9.0" % "test"
 )

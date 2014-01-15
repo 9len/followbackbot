@@ -5,6 +5,7 @@ import com.twitter.conversions.time._
 import com.twitter.util.{JavaTimer, Timer}
 import twitter4j._
 import twitter4j.auth.AccessToken
+import twitter4j.conf.ConfigurationBuilder
 
 case class Credentials(
     screenName: String,
@@ -35,12 +36,17 @@ class FollowBackBot(
       System.getenv("TWITTER_CONSUMER_SECRET")
     )
 
-  val twitter = {
-    val twitter = new TwitterFactory().getInstance()
-    twitter.setOAuthConsumer(credentials.consumerKey, credentials.consumerSecret)
-    twitter.setOAuthAccessToken(new AccessToken(credentials.token, credentials.secret))
-    twitter
-  }
+  val twitterConfig =
+    (new ConfigurationBuilder)
+      .setDebugEnabled(true)
+      .setOAuthConsumerKey(credentials.consumerKey)
+      .setOAuthConsumerSecret(credentials.consumerSecret)
+      .setOAuthAccessToken(credentials.token)
+      .setOAuthAccessTokenSecret(credentials.secret)
+      .setUseSSL(true)
+      .build()
+
+  val twitter = new TwitterFactory(twitterConfig).getInstance()
 
   val userId = twitter.showUser(credentials.screenName).getId
 
@@ -55,12 +61,7 @@ class FollowBackBot(
 
   val listener = new Listener(userId, credentials.screenName, responder, socialGraph, twitter)
 
-  val stream = {
-    val stream = new TwitterStreamFactory().getInstance()
-    stream.setOAuthConsumer(credentials.consumerKey, credentials.consumerSecret)
-    stream.setOAuthAccessToken(new AccessToken(credentials.token, credentials.secret))
-    stream
-  }
+  val stream = new TwitterStreamFactory(twitterConfig).getInstance()
 
   def initLogger() {
     Logger.reset()
