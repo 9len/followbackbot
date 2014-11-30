@@ -1,11 +1,12 @@
 package nu.glen.followbackbot
 
-import com.twitter.util.{Return, Throw}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.FunSpec
 import org.scalatest.mock.MockitoSugar
 import twitter4j._
+
+import scala.util.{Failure, Success}
 
 class ListenerSpec extends FunSpec with MockitoSugar {
   val socialGraph = mock[SocialGraph]
@@ -93,7 +94,7 @@ class ListenerSpec extends FunSpec with MockitoSugar {
       when(status.getText).thenReturn("foobarbaz")
       val statusUpdate = new StatusUpdate("meh")
       when(responder(status)).thenReturn(Some(statusUpdate))
-      when(socialGraph.checkOrUnfollow(target.getId)).thenReturn(Return(false))
+      when(socialGraph.checkOrUnfollow(target.getId)).thenReturn(Success(false))
       listener.onStatus(status)
       verify(responder)(status)
       verify(socialGraph).checkOrUnfollow(target.getId)
@@ -107,7 +108,7 @@ class ListenerSpec extends FunSpec with MockitoSugar {
       when(status.getText).thenReturn("foobarbaz")
       val statusUpdate = new StatusUpdate("meh")
       when(responder(status)).thenReturn(Some(statusUpdate))
-      when(socialGraph.checkOrUnfollow(target.getId)).thenReturn(Throw(new RuntimeException))
+      when(socialGraph.checkOrUnfollow(target.getId)).thenReturn(Failure(new RuntimeException))
       listener.onStatus(status)
       verify(responder)(status)
       verify(socialGraph).checkOrUnfollow(target.getId)
@@ -121,7 +122,7 @@ class ListenerSpec extends FunSpec with MockitoSugar {
       when(status.getText).thenReturn("foobarbaz")
       val statusUpdate = new StatusUpdate("meh")
       when(responder(status)).thenReturn(Some(statusUpdate))
-      when(socialGraph.checkOrUnfollow(target.getId)).thenReturn(Return(true))
+      when(socialGraph.checkOrUnfollow(target.getId)).thenReturn(Success(true))
       listener.onStatus(status)
       verify(responder)(status)
       verify(socialGraph).checkOrUnfollow(target.getId)

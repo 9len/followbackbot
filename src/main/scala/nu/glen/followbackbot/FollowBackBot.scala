@@ -1,17 +1,18 @@
 package nu.glen.followbackbot
 
-import com.twitter.logging.Logger
-import com.twitter.conversions.time._
-import com.twitter.util.{JavaTimer, Timer}
+import java.util.{Timer, TimerTask}
+
 import twitter4j._
 import twitter4j.conf.ConfigurationBuilder
 
-case class Credentials(
-    screenName: String,
-    token: String,
-    secret: String,
-    consumerKey: String,
-    consumerSecret: String)
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
+case class Credentials(screenName: String,
+                       token: String,
+                       secret: String,
+                       consumerKey: String,
+                       consumerSecret: String)
 
 /**
  * initializes the Twitter, TwitterStream, Listener and SocialGraph
@@ -20,12 +21,11 @@ case class Credentials(
  * @param blacklist (optional) a Seq of screen names to ignore
  * @param timer (optional) the timer to use for scheduled reciprocation
  */
-class FollowBackBot(
-    responder: Responder,
-    blacklist: Seq[String] = Nil,
-    timer: Timer = new JavaTimer)
-  extends SimpleLogger
-{
+class FollowBackBot(responder: Responder,
+                    blacklist: Seq[String] = Nil,
+                    timer: Timer = new Timer)
+  extends SimpleLogger {
+
   val credentials =
     Credentials(
       System.getenv("TWITTER_SCREEN_NAME"),
@@ -63,15 +63,16 @@ class FollowBackBot(
   val stream = new TwitterStreamFactory(twitterConfig).getInstance()
 
   def initLogger() {
-    Logger.reset()
     log.info("STARTING UP")
   }
 
   def startReciprocation() {
-    timer.schedule(5.seconds.fromNow, 10.minutes) {
-      // don't unfollow back; the Listener will unfollow if necessary instead of replying
-      socialGraph.reciprocate(followBack = true, unfollowBack = false)
-    }
+    timer.schedule(new TimerTask {
+      def run() {
+        // don't unfollow back; the Listener will unfollow if necessary instead of replying
+        socialGraph.reciprocate(followBack = true, unfollowBack = false)
+      }
+    }, 5.seconds.toMillis, 10.minutes.toMillis)
   }
 
   def start() {

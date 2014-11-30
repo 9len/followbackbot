@@ -1,12 +1,13 @@
 package nu.glen.followbackbot
 
-import collection.JavaConverters._
-import com.twitter.conversions.time._
-import com.twitter.util.Duration
-import com.google.common.cache.CacheBuilder
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
+
+import com.google.common.cache.CacheBuilder
 import twitter4j.User
+
+import scala.collection.JavaConverters._
+import scala.concurrent.duration.Duration
 
 object RateLimiter {
   val defaultMaxSize = 10000
@@ -36,7 +37,7 @@ case class ExpiringCounters(ttl: Duration, size: Int) {
     CacheBuilder.newBuilder.asInstanceOf[CacheBuilder[Long, AtomicInteger]]
       .initialCapacity(size) // no surprises
       .maximumSize(size)
-      .expireAfterWrite(ttl.inMillis, TimeUnit.MILLISECONDS)
+      .expireAfterWrite(ttl.toMillis, TimeUnit.MILLISECONDS)
       .build[Long, AtomicInteger]()
       .asMap
       .asScala
@@ -60,16 +61,15 @@ case class ExpiringCounters(ttl: Duration, size: Int) {
  * @param maxValue the maximum value for a counter before rate limiting
  */
 class ExpiringCountersRateLimiter(counters: ExpiringCounters, maxValue: Int)
-  extends RateLimiter with SimpleLogger
-{
-  override lazy val name = "RateLimiter(%s/%s)".format(
-    maxValue, counters.ttl
-  ).replaceAll("\\.", "_")
+  extends RateLimiter
+  with SimpleLogger {
+
+  override lazy val name = s"RateLimiter($maxValue/${counters.ttl})".replaceAll("\\.", "_")
 
   override def apply(user: User): Boolean = {
     val value = counters.incrementAndGet(user.getId)
     val limited = value > maxValue
-    if (limited) log.info("rate limited %s", user.getScreenName)
+    if (limited) log.info(s"rate limited ${user.getScreenName}")
     limited
   }
 }

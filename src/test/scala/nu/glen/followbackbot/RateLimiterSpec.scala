@@ -1,10 +1,10 @@
 package nu.glen.followbackbot
 
-import com.twitter.conversions.time._
 import org.mockito.Mockito._
 import org.scalatest.FunSpec
 import org.scalatest.mock.MockitoSugar
 import twitter4j.User
+import scala.concurrent.duration._
 
 class RateLimiterSpec extends FunSpec with MockitoSugar {
   val user = mock[User]

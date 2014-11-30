@@ -1,11 +1,11 @@
 package nu.glen.followbackbot
 
-import com.twitter.util.{Return, Throw}
-import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.FunSpec
 import org.scalatest.mock.MockitoSugar
 import twitter4j._
+
+import scala.util.{Failure, Success}
 
 class SocialGraphSpec extends FunSpec with MockitoSugar {
   val userId = 100L
@@ -46,7 +46,7 @@ class SocialGraphSpec extends FunSpec with MockitoSugar {
     ids
   }
 
-  val ids1 = mkIds(Array(1, 2, 3, 4), Some(4))
+  val ids1 = mkIds(Array[Long](1, 2, 3, 4), Some(4))
   val ids2 = mkIds(Array(5, 6, blacklisted), None)
 
   def mkUser(isProtected: Boolean, isFollowRequestSent: Boolean) = {
@@ -58,8 +58,8 @@ class SocialGraphSpec extends FunSpec with MockitoSugar {
 
   describe("SocialGraph.reciprocate") {
     it("should follow and unfollow") {
-      val followingIds = mkIds(Array(2, 3, 4), None)
-      val followersIds = mkIds(Array(3, 4, 6), None)
+      val followingIds = mkIds(Array[Long](2, 3, 4), None)
+      val followersIds = mkIds(Array[Long](3, 4, 6), None)
 
       when(twitter.getFollowersIDs(CursorSupport.START)).thenReturn(followersIds)
       when(twitter.getFriendsIDs(CursorSupport.START)).thenReturn(followingIds)
@@ -136,7 +136,7 @@ class SocialGraphSpec extends FunSpec with MockitoSugar {
     }
 
     for (isProtected <- List(Some(true), None)) {
-      it("should lookup user if isProtected == %s and not follow if protected and follow request sent".format(isProtected)) {
+      it(s"should lookup user if isProtected == $isProtected and not follow if protected and follow request sent") {
         val target = NextTarget()
         val user = mkUser(true, true)
         when(twitter.showFriendship(userId, target)).thenReturn(falseFriendship)
@@ -147,7 +147,7 @@ class SocialGraphSpec extends FunSpec with MockitoSugar {
         verify(twitter, never).createFriendship(target)
       }
 
-      it("should lookup user if isProtected == %s and follow if protected and follow request not sent".format(isProtected)) {
+      it(s"should lookup user if isProtected == $isProtected and follow if protected and follow request not sent") {
         val target = NextTarget()
         val user = mkUser(true, false)
         when(twitter.showFriendship(userId, target)).thenReturn(falseFriendship)
@@ -158,7 +158,7 @@ class SocialGraphSpec extends FunSpec with MockitoSugar {
         verify(twitter).createFriendship(target)
       }
 
-      it("should lookup user if isProtected == %s and follow if not actually protected".format(isProtected)) {
+      it(s"should lookup user if isProtected == $isProtected and follow if not actually protected") {
         val target = NextTarget()
         val user = mkUser(false, false)
         when(twitter.showFriendship(userId, target)).thenReturn(falseFriendship)
@@ -197,7 +197,7 @@ class SocialGraphSpec extends FunSpec with MockitoSugar {
       val target = NextTarget()
       when(twitter.showFriendship(target, userId)).thenReturn(trueFriendship)
       val result = socialGraph.checkOrUnfollow(target)
-      assert(result == Return(true))
+      assert(result == Success(true))
       verify(twitter).showFriendship(target, userId)
     }
 
@@ -205,14 +205,14 @@ class SocialGraphSpec extends FunSpec with MockitoSugar {
       val target = NextTarget()
       when(twitter.showFriendship(target, userId)).thenReturn(falseFriendship)
       val result = socialGraph.checkOrUnfollow(target)
-      assert(result == Return(false))
+      assert(result == Success(false))
       verify(twitter).showFriendship(target, userId)
     }
 
     it("should return Return(false) if blacklisted") {
       val target = blacklisted
       val result = socialGraph.checkOrUnfollow(target)
-      assert(result == Return(false))
+      assert(result == Success(false))
       verify(twitter, never).showFriendship(blacklisted, userId)
     }
 
@@ -221,7 +221,7 @@ class SocialGraphSpec extends FunSpec with MockitoSugar {
       val ex = new RuntimeException
       when(twitter.showFriendship(target, userId)).thenThrow(ex)
       val result = socialGraph.checkOrUnfollow(target)
-      assert(result == Throw(ex))
+      assert(result == Failure(ex))
       verify(twitter).showFriendship(target, userId)
     }
   }
@@ -231,7 +231,7 @@ class SocialGraphSpec extends FunSpec with MockitoSugar {
     it("should return all followers, except blacklist") {
       when(twitter.getFollowersIDs(CursorSupport.START)).thenReturn(ids1)
       when(twitter.getFollowersIDs(4)).thenReturn(ids2)
-      assert(socialGraph.followers == Return(Set(1L, 2L, 3L, 4L, 5L, 6L)))
+      assert(socialGraph.followers == Success(Set(1L, 2L, 3L, 4L, 5L, 6L)))
       // twice because of the reciprocate test
       verify(twitter, times(2)).getFollowersIDs(CursorSupport.START)
       verify(twitter).getFollowersIDs(4)
@@ -243,7 +243,7 @@ class SocialGraphSpec extends FunSpec with MockitoSugar {
     it("should return all following") {
       when(twitter.getFriendsIDs(CursorSupport.START)).thenReturn(ids1)
       when(twitter.getFriendsIDs(4)).thenReturn(ids2)
-      assert(socialGraph.following == Return(Set(1L, 2L, 3L, 4L, 5L, 6L, blacklisted)))
+      assert(socialGraph.following == Success(Set(1L, 2L, 3L, 4L, 5L, 6L, blacklisted)))
       // twice because of the reciprocate test
       verify(twitter, times(2)).getFriendsIDs(CursorSupport.START)
       verify(twitter).getFriendsIDs(4)

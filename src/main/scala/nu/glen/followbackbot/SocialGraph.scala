@@ -1,8 +1,9 @@
 package nu.glen.followbackbot
 
-import annotation.tailrec
-import com.twitter.util.{Return, Throw, Try}
 import twitter4j._
+
+import scala.annotation.tailrec
+import scala.util.{Failure, Success, Try}
 
 /**
  * takes care of various social graph-related actions, such as following and unfollowing
@@ -24,19 +25,19 @@ class SocialGraph(userId: Long, twitter: Twitter, blacklist: Set[Long]) extends 
       allFollowers <- followers()
       allFollowing <- following()
     } {
-      log.debug("Followers: %s", allFollowers)
-      log.debug("Following: %s", allFollowing)
+      log.debug(s"Followers: $allFollowers")
+      log.debug(s"Following: $allFollowing")
 
       if (followBack) {
         val toFollow = allFollowers -- allFollowing
-        log.info("To Follow: %s", toFollow)
+        log.info(s"To Follow: $toFollow", toFollow)
         withUserIds(toFollow)(follow(_, None, false))
       }
 
       if (unfollowBack) {
         val toUnfollow = allFollowing -- allFollowers
-        log.info("To Unfollow: %s", toUnfollow)
-        withUserIds(toUnfollow)(unfollow(_))
+        log.info(s"To Unfollow: $toUnfollow")
+        withUserIds(toUnfollow)(unfollow)
       }
     }
   }
@@ -69,24 +70,22 @@ class SocialGraph(userId: Long, twitter: Twitter, blacklist: Set[Long]) extends 
    * and a follow request has already been sent.
    *
    * The two current use cases for this method are:
-   *  - reciprocation, in which we don't need to check that the user is following
-   *  - onFollow from the userStream, in which we need to check if the user is following, and
-   *    we know that the user is or isn't protected, but don't know if a follow request has
-   *    been sent, because the stream doesn't reliably include that field.
+   * - reciprocation, in which we don't need to check that the user is following
+   * - onFollow from the userStream, in which we need to check if the user is following, and
+   * we know that the user is or isn't protected, but don't know if a follow request has
+   * been sent, because the stream doesn't reliably include that field.
    *
-   * @param the target the userId to follow
+   * @param target the userId to follow
    * @param isProtected if known, whether or not the user is protected
    * @param checkAlreadyFollowed check to see if the user already followed, don't follow if so
    */
-  def follow(
-    target: Long,
-    isProtected: Option[Boolean],
-    checkAlreadyFollowed: Boolean
-  ): Unit = synchronized {
+  def follow(target: Long,
+             isProtected: Option[Boolean],
+             checkAlreadyFollowed: Boolean): Unit = synchronized {
     if (isBlacklisted(target)) {
-      log.info(" userId is blacklisted: %s", target)
+      log.info(s" userId is blacklisted: $target")
     } else if (checkAlreadyFollowed && isFollowing(target)) {
-      log.info(" Already following %s", target)
+      log.info(s" Already following $target")
     } else {
       val followRequestAlreadySent = isProtected match {
         case Some(true) | None =>
@@ -100,7 +99,7 @@ class SocialGraph(userId: Long, twitter: Twitter, blacklist: Set[Long]) extends 
       if (followRequestAlreadySent) {
         log.info(" Follow request already sent.")
       } else {
-        log.info(" Following %s", target)
+        log.info(s" Following $target")
         twitter.createFriendship(target)
       }
     }
@@ -116,10 +115,6 @@ class SocialGraph(userId: Long, twitter: Twitter, blacklist: Set[Long]) extends 
 
   /**
    * Check to see if a user is still following me and if not, unfollow the user.
-   *
-   * @param target the userId to inspect
-   * @param msg a message to log
-   * @param args args for that message
    *
    * @return Return(true) if still follows, Return(false) if not, Throw(_) on exception
    */
@@ -144,7 +139,7 @@ class SocialGraph(userId: Long, twitter: Twitter, blacklist: Set[Long]) extends 
   /**
    * Get the full Set of users who follow me
    */
-  def followers(): Try[Set[Long]] = getAllIds(twitter.getFollowersIDs) map { _ -- blacklist }
+  def followers(): Try[Set[Long]] = getAllIds(twitter.getFollowersIDs) map {_ -- blacklist}
 
   /**
    * Get the full Set of users who I follow
@@ -160,7 +155,7 @@ class SocialGraph(userId: Long, twitter: Twitter, blacklist: Set[Long]) extends 
    */
   protected[this] def withUserIds(userIds: Iterable[Long])(f: Long => Unit) {
     userIds foreach { userId =>
-      tryAndLogResult("Acting on: %s", userId) {
+      tryAndLogResult(s"Acting on: $userId") {
         f(userId)
       }
     }
@@ -178,19 +173,20 @@ class SocialGraph(userId: Long, twitter: Twitter, blacklist: Set[Long]) extends 
       // we use an explicit match here rather than a flatMap so that
       // we can make it tail recursive
       Try(f(cursor)) match {
-        case Throw(t) => Throw(t)
-        case Return(ids) =>
+        case Failure(t) => Failure(t)
+        case Success(ids) =>
           val idSet = ids.getIDs.toSet ++ accum
 
-          if (ids.hasNext)
-            dispatch(ids.getNextCursor, idSet)
-          else
-            Return(idSet)
+          if (ids.hasNext) dispatch(ids.getNextCursor, idSet)
+          else Success(idSet)
       }
     }
 
-    dispatch(CursorSupport.START, Set.empty) onFailure { case t =>
-      log.info(t, "Couldn't get follows: %s", t.getMessage)
+    val res = dispatch(CursorSupport.START, Set.empty)
+    res match {
+      case Failure(t) => log.warn("Couldn't get follows", t)
+      case _ =>
     }
+    res
   }
 }
