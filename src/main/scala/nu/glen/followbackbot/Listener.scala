@@ -14,17 +14,15 @@ import twitter4j._
  * @param socialGraph used to process follow/unfollow actions
  * @param twitter used to call the Twitter API
  */
-class Listener(
-    userId: Long,
-    screenName: String,
-    responder: Responder,
-    socialGraph: SocialGraph,
-    twitter: Twitter)
+class Listener(userId: Long,
+               screenName: String,
+               responder: Responder,
+               socialGraph: SocialGraph,
+               twitter: Twitter)
   extends UserStreamListener
-  with SimpleLogger
-{
-  protected[this] val retweetRegex =
-    (""".*?\brt @""" + screenName.toLowerCase + "[: ].*").r
+  with SimpleLogger {
+
+  protected[this] val retweetRegex = (""".*?\brt @""" + screenName.toLowerCase + "[: ].*").r
 
   protected[this] def isMe(user: User) = user.getId == userId
 
@@ -36,12 +34,12 @@ class Listener(
 
   /**
    * reply to the status iff:
-   *  - the status's user is not the bot
-   *  - the status is not a retweet of a previous bot tweet
-   *  - the responder produces a response
+   * - the status's user is not the bot
+   * - the status is not a retweet of a previous bot tweet
+   * - the responder produces a response
    */
   override def onStatus(status: Status) {
-    log.info("Got Status: @%s: %s", status.getUser.getScreenName, status.getText)
+    log.info(s"Got Status: @${status.getUser.getScreenName}: ${status.getText}")
 
     if (isMe(status.getUser)) {
       log.info(" Ignoring my own status")
@@ -50,15 +48,16 @@ class Listener(
     } else {
       responder(status) match {
         case Some(statusUpdate) =>
-          tryAndLogResult(
-            " Replying (inReplyToStatusId = %s) %s",
-            status.getId,
-            statusUpdate.getStatus
-          ) {
+          tryAndLogResult(s" Replying (inReplyToStatusId = ${status.getId}) ${statusUpdate.getStatus}") {
             // only send the reply if the user still follows us
             if (socialGraph.checkOrUnfollow(status.getUser.getId).getOrElse(false)) {
-              log.info(" Tweeting: %s", statusUpdate.getStatus)
-              twitter.updateStatus(statusUpdate.inReplyToStatusId(status.getId))
+              log.info(s" Tweeting: ${statusUpdate.getStatus}")
+              try twitter.updateStatus(statusUpdate.inReplyToStatusId(status.getId))
+              catch {
+                case e: Exception =>
+                  log.error("Twitter error", e)
+                  throw e
+              }
             }
           }
 
@@ -71,18 +70,11 @@ class Listener(
    * follow back if source isn't the bot
    */
   override def onFollow(source: User, followedUser: User) {
-    log.info(
-      "Got follow notification: %s/%d -> %s/%d",
-      source.getScreenName,
-      source.getId,
-      followedUser.getScreenName,
-      followedUser.getId
-    )
+    log.info(s"Got follow notification: ${source.getScreenName}/${source.getId} " +
+      s"-> ${followedUser.getScreenName}/${followedUser.getId}")
 
-    if (isMe(source))
-      log.info(" Ignoring notification of my own actions")
-    else
-      socialGraph.follow(source.getId, Some(source.isProtected), true)
+    if (isMe(source)) log.info(" Ignoring notification of my own actions")
+    else socialGraph.follow(source.getId, Some(source.isProtected), true)
   }
 
   override def onBlock(source: User, blockedUser: User) = ()

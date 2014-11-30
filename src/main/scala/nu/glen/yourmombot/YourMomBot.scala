@@ -1,7 +1,8 @@
 package nu.glen.yourmombot
 
-import com.twitter.conversions.time._
 import nu.glen.followbackbot.{FollowBackBot, RateLimiter, Responder}
+
+import scala.concurrent.duration._
 
 object YourMomBot
   extends FollowBackBot(
@@ -20,7 +21,6 @@ object YourMomBot
       )
     )
   )
-  with App
-{
+  with App {
   override def name = "YourMomBot"
 }

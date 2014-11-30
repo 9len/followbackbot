@@ -30,7 +30,7 @@ abstract class KeywordPrefixResponder(stopWords: Set[String])
   def apply(statusText: String): Option[String] = {
     extract(statusText) flatMap { case (keyword, rest) =>
       if (stopWords.contains(keyword)) {
-        log.info(" Skipping tweet with stop word: %s", keyword)
+        log.info(s" Skipping tweet with stop word: $keyword")
         None
       } else {
         Some(combine(keyword, rest))

@@ -5,7 +5,7 @@ import org.scalatest.FunSpec
 class KeywordPrefixResponderSpec extends FunSpec {
   describe("BeHaveDoKeywordPrefixResponder") {
     val responder = new BeHaveDoKeywordPrefixResponder {
-      override def combine(keyword: String, rest: String) = "(%s,%s)".format(keyword, rest)
+      override def combine(keyword: String, rest: String) = s"($keyword,$rest)"
     }
 
     it("should extract a sentance") {
@@ -26,7 +26,7 @@ class KeywordPrefixResponderSpec extends FunSpec {
 
   describe("GerrundKeywordPrefixResponder") {
     val responder = new GerrundKeywordPrefixResponder {
-      override def combine(keyword: String, rest: String) = "(%s,%s)".format(keyword, rest)
+      override def combine(keyword: String, rest: String) = s"($keyword,$rest)"
     }
 
     val good = Some("(hoping, this works)")
@@ -69,7 +69,7 @@ class KeywordPrefixResponderSpec extends FunSpec {
 
   describe("PastTenseKeywordPrefixResponder") {
     val responder = new PastTenseKeywordPrefixResponder {
-      override def combine(keyword: String, rest: String) = "(%s,%s)".format(keyword, rest)
+      override def combine(keyword: String, rest: String) = s"($keyword,$rest)"
     }
 
     val good = Some("(hoped, this worked)")

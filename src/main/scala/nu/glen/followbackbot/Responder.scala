@@ -2,7 +2,7 @@ package nu.glen.followbackbot
 
 import twitter4j.{Status, StatusUpdate}
 
-object Responder {
+object Responder extends SimpleLogger {
   /**
    * converts a SimpleResponder to a Responder, prefixing with the @reply,
    * and truncating the response if necessary
@@ -11,24 +11,19 @@ object Responder {
    */
   def simple(responder: SimpleResponder): Responder = { status =>
     // get the untruncated retweet text if status is a retweet
-    val text =
-      Option(
-        if (status.isRetweet)
-          status.getRetweetedStatus.getText
-        else
-          status.getText
-      ).getOrElse("").trim
+    val text = Option(
+      if (status.isRetweet) status.getRetweetedStatus.getText
+      else status.getText
+    ).getOrElse("").trim
 
     responder(text) map { response =>
       // add @reply prefix
-      val withReply = "@%s %s".format(status.getUser.getScreenName, response).trim
+      val withReply = s"@${status.getUser.getScreenName} $response".trim
 
       // trim to 140 chars, append an elipsis if > 140
       val trimmed =
-        if (withReply.size > 140)
-          withReply.substring(0, 139).trim + "…"
-        else
-          withReply
+        if (withReply.size < 140) withReply
+        else withReply.substring(0, 139).trim + "…"
 
       new StatusUpdate(trimmed)
     }
@@ -46,7 +41,7 @@ object Responder {
 
       override def apply(status: Status): Option[StatusUpdate] = {
         responder.apply(status) flatMap { statusUpdate =>
-          log.info(" Would have tweeted: %s", statusUpdate.getStatus)
+          log.info(s" Would have tweeted: ${statusUpdate.getStatus}")
           None
         }
       }
@@ -64,11 +59,9 @@ object Responder {
 
       override def apply(status: Status): Option[StatusUpdate] = {
         if (status.getUser.isProtected) {
-          log.info(" Ignoring status from protected user: %s", status.getUser.getScreenName)
+          log.info(s" Ignoring status from protected user: ${status.getUser.getScreenName}")
           None
-        } else {
-          responder(status)
-        }
+        } else responder(status)
       }
     }
 
@@ -80,7 +73,7 @@ object Responder {
    * @return the new Responder
    */
   def rateLimited(responder: Responder, rateLimiter: RateLimiter): Responder =
-    (status) => responder(status) filterNot { _ => rateLimiter(status.getUser) }
+    (status) => responder(status) filterNot { _ => rateLimiter(status.getUser)}
 
   /**
    * merge Responders into a single Responder, preferring first response
@@ -88,7 +81,7 @@ object Responder {
    * @return the new Responder
    */
   def merged(responders: Responder*): Responder =
-    mergedWithPreference(responders: _*) { (a, _) => a }
+    mergedWithPreference(responders: _*) { (a, _) => a}
 
   /**
    * merge Responders into a single Responder, preferring longest response
@@ -106,11 +99,8 @@ object Responder {
    * @param choose a function to choose between two StatusUpdates
    * @return the new Responder
    */
-  def mergedWithPreference(
-    responders: Responder*
-  )(
-    choose: (StatusUpdate, StatusUpdate) => StatusUpdate
-  ): Responder = { status =>
+  def mergedWithPreference(responders: Responder*)
+                          (choose: (StatusUpdate, StatusUpdate) => StatusUpdate): Responder = { status =>
     responders.foldLeft[Option[StatusUpdate]](None) { (accum, responder) =>
       (accum, responder(status)) match {
         case (Some(a), Some(b)) => Some(choose(a, b))
